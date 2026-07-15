@@ -3,7 +3,7 @@ import 'core/theme/app_theme.dart';
 import 'features/home/presentation/pages/home_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'core/providers/settings_provider.dart';
 void main() {
   runApp(
     const ProviderScope(
@@ -12,17 +12,20 @@ void main() {
   );
 }
 
-class KhanaApp extends StatelessWidget {
+class KhanaApp extends ConsumerWidget {
   const KhanaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+
     return MaterialApp(
       title: 'Khana App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
+      themeMode: settings.themeMode,
+      locale: settings.locale,
       home: const HomeScreen(),
     );
   }

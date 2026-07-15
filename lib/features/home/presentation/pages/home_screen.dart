@@ -16,6 +16,7 @@ import '../../../menu/presentation/pages/menu_screen.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
 import '../../../offers/presentation/pages/offers_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
+import '../../../menu/presentation/pages/search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -153,8 +154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: const Icon(Icons.search, size: AppSizes.iconLg),
               tooltip: 'Search',
               onPressed: () {
-                setState(() => _currentNavIndex = 1);
-                // Trigger search open in MenuScreen
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
               },
             ),
             const SizedBox(width: AppSpacing.sm),

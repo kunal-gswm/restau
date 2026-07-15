@@ -10,6 +10,16 @@ import '../../../../shared/widgets/stat_card.dart';
 import '../../../../shared/widgets/reward_card.dart';
 import '../../../../shared/widgets/order_card.dart';
 import '../../../../shared/widgets/settings_tile.dart';
+import '../../../auth/presentation/pages/login_screen.dart';
+import 'saved_addresses_screen.dart';
+import 'payment_methods_screen.dart';
+import 'favorites_screen.dart';
+import 'support_chat_screen.dart';
+import 'faq_screen.dart';
+import 'contact_us_screen.dart';
+import 'notifications_settings_screen.dart';
+import 'appearance_screen.dart';
+import 'language_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -265,9 +275,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   const SizedBox(height: AppSpacing.md),
                   SettingsGroup(
                     children: [
-                      SettingsTile(icon: Icons.location_on_outlined, title: 'Saved Addresses (${user.addresses.length})', onTap: () {}),
-                      SettingsTile(icon: Icons.payment_outlined, title: 'Payment Methods (${user.paymentMethods.length})', onTap: () {}),
-                      SettingsTile(icon: Icons.favorite_border, title: 'Favorites', onTap: () {}),
+                      SettingsTile(icon: Icons.location_on_outlined, title: 'Saved Addresses (${user.addresses.length})', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedAddressesScreen()))),
+                      SettingsTile(icon: Icons.payment_outlined, title: 'Payment Methods (${user.paymentMethods.length})', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentMethodsScreen()))),
+                      SettingsTile(icon: Icons.favorite_border, title: 'Favorites', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesScreen()))),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -276,9 +286,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   const SizedBox(height: AppSpacing.md),
                   SettingsGroup(
                     children: [
-                      SettingsTile(icon: Icons.chat_bubble_outline, title: 'Live Chat', onTap: () {}),
-                      SettingsTile(icon: Icons.help_outline, title: 'FAQ & Help', onTap: () {}),
-                      SettingsTile(icon: Icons.mail_outline, title: 'Contact Us', onTap: () {}),
+                      SettingsTile(icon: Icons.chat_bubble_outline, title: 'Live Chat', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportChatScreen()))),
+                      SettingsTile(icon: Icons.help_outline, title: 'FAQ & Help', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaqScreen()))),
+                      SettingsTile(icon: Icons.mail_outline, title: 'Contact Us', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactUsScreen()))),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -287,9 +297,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   const SizedBox(height: AppSpacing.md),
                   SettingsGroup(
                     children: [
-                      SettingsTile(icon: Icons.notifications_outlined, title: 'Notifications', onTap: () {}),
-                      SettingsTile(icon: Icons.dark_mode_outlined, title: 'Appearance', onTap: () {}),
-                      SettingsTile(icon: Icons.language_outlined, title: 'Language', onTap: () {}),
+                      SettingsTile(icon: Icons.notifications_outlined, title: 'Notifications', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsSettingsScreen()))),
+                      SettingsTile(icon: Icons.dark_mode_outlined, title: 'Appearance', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppearanceScreen()))),
+                      SettingsTile(icon: Icons.language_outlined, title: 'Language', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LanguageScreen()))),
                     ],
                   ),
 
@@ -300,7 +310,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                     width: double.infinity,
                     height: AppSizes.buttonHeightLg,
                     child: OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: AppColors.surface,
+                            title: Text('Log Out', style: AppTypography.h2(AppColors.textPrimary)),
+                            content: Text('Are you sure you want to log out?', style: AppTypography.body1(AppColors.textSecondary)),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, elevation: 0),
+                                onPressed: () {
+                                  Navigator.pop(context); // Close dialog
+                                  Navigator.of(context, rootNavigator: true).pushReplacement(
+                                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                  );
+                                },
+                                child: Text('Log Out', style: AppTypography.buttonRegular(AppColors.textOnPrimary)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: const BorderSide(color: AppColors.error),

@@ -11,6 +11,7 @@ import '../../../../shared/widgets/search_input.dart';
 import '../../../../shared/widgets/quantity_stepper.dart';
 import '../../../../shared/widgets/fade_slide_entry.dart';
 import 'product_details_screen.dart';
+import 'search_screen.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
@@ -85,8 +86,6 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   Widget build(BuildContext context) {
     final groupedProducts = ref.watch(menuByCategoryProvider);
     final categories = ref.watch(categoriesProvider);
-    final searchQuery = ref.watch(searchQueryProvider);
-    final searchResults = ref.watch(searchResultsProvider);
     
     // Ensure keys exist for all categories
     for (var category in categories) {
@@ -99,24 +98,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         controller: _scrollController,
         slivers: [
           _buildSliverAppBar(),
-          
-          if (searchQuery.isNotEmpty) ...[
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.screenPadding),
-                child: Text('Search Results for "$searchQuery"', style: AppTypography.h2(AppColors.textPrimary)),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Column(
-                children: searchResults.map((product) => _buildProductCard(product)).toList(),
-              ),
-            ),
-          ] else ...[
-            _buildStickyCategoryBar(categories),
-            for (var category in groupedProducts.keys)
-              _buildMenuSection(category, groupedProducts[category]!),
-          ],
+          _buildStickyCategoryBar(categories),
+          for (var category in groupedProducts.keys)
+            _buildMenuSection(category, groupedProducts[category]!),
 
           // Bottom padding for cart FAB (managed by HomeScreen)
           const SliverToBoxAdapter(
@@ -235,9 +219,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   SearchInput(
                     hintText: 'Search in Khana...',
-                    isInteractive: true,
-                    onChanged: (val) {
-                      ref.read(searchQueryProvider.notifier).setQuery(val);
+                    isInteractive: false,
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
                     },
                   ),
                 ],

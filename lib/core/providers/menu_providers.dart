@@ -63,10 +63,63 @@ final searchQueryProvider = NotifierProvider<SearchQueryNotifier, String>(() {
   return SearchQueryNotifier();
 });
 
+class SearchFiltersState {
+  final bool isVegOnly;
+  final double maxPrice;
+
+  const SearchFiltersState({
+    this.isVegOnly = false,
+    this.maxPrice = 1500.0,
+  });
+
+  SearchFiltersState copyWith({bool? isVegOnly, double? maxPrice}) {
+    return SearchFiltersState(
+      isVegOnly: isVegOnly ?? this.isVegOnly,
+      maxPrice: maxPrice ?? this.maxPrice,
+    );
+  }
+}
+
+class SearchFiltersNotifier extends Notifier<SearchFiltersState> {
+  @override
+  SearchFiltersState build() => const SearchFiltersState();
+
+  void toggleVegOnly(bool value) => state = state.copyWith(isVegOnly: value);
+  void setMaxPrice(double value) => state = state.copyWith(maxPrice: value);
+}
+
+final searchFiltersProvider = NotifierProvider<SearchFiltersNotifier, SearchFiltersState>(() => SearchFiltersNotifier());
+
+class RecentSearchesNotifier extends Notifier<List<String>> {
+  @override
+  List<String> build() => ['Biryani', 'Paneer Tikka'];
+
+  void addSearch(String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    final current = List<String>.from(state);
+    current.remove(trimmed);
+    current.insert(0, trimmed);
+    if (current.length > 5) current.removeLast();
+    state = current;
+  }
+  
+  void clearSearches() => state = [];
+}
+
+final recentSearchesProvider = NotifierProvider<RecentSearchesNotifier, List<String>>(() => RecentSearchesNotifier());
+
 final searchResultsProvider = Provider<List<Product>>((ref) {
   final query = ref.watch(searchQueryProvider).toLowerCase();
+  final filters = ref.watch(searchFiltersProvider);
+  
   if (query.isEmpty) return [];
   
   final products = ref.watch(productsProvider);
-  return products.where((p) => p.title.toLowerCase().contains(query) || p.description.toLowerCase().contains(query)).toList();
+  return products.where((p) {
+    final matchesQuery = p.title.toLowerCase().contains(query) || p.description.toLowerCase().contains(query);
+    final matchesVeg = !filters.isVegOnly || p.isVeg;
+    final matchesPrice = p.price <= filters.maxPrice;
+    return matchesQuery && matchesVeg && matchesPrice;
+  }).toList();
 });
