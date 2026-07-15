@@ -32,7 +32,7 @@ class SectionHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (trailing != null) trailing!,
+          trailing ?? const SizedBox.shrink(),
           if (actionText != null && trailing == null)
             Material(
               color: AppColors.primaryLight,

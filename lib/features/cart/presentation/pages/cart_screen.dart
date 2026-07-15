@@ -9,6 +9,7 @@ import '../../../../core/providers/menu_providers.dart';
 import '../../../../core/models/cart_item_model.dart';
 import '../../../../shared/widgets/quantity_stepper.dart';
 import '../../../../shared/widgets/section_header.dart';
+import '../../../../shared/widgets/animated_price.dart';
 import '../../../../shared/widgets/upsell_card.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../checkout/presentation/pages/checkout_screen.dart';
@@ -307,7 +308,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('To Pay', style: AppTypography.h2(AppColors.textPrimary)),
-                        Text('₹${cartState.grandTotal.toStringAsFixed(0)}', style: AppTypography.priceLarge(AppColors.textPrimary)),
+                        AnimatedPrice(
+                          value: cartState.grandTotal,
+                          textStyle: AppTypography.priceLarge(AppColors.textPrimary),
+                        ),
                       ],
                     ),
                   ],

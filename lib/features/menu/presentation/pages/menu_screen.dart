@@ -9,6 +9,7 @@ import '../../../../core/providers/cart_providers.dart';
 import '../../../../core/models/product_model.dart';
 import '../../../../shared/widgets/search_input.dart';
 import '../../../../shared/widgets/quantity_stepper.dart';
+import '../../../../shared/widgets/fade_slide_entry.dart';
 import 'product_details_screen.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
@@ -334,7 +335,14 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
               ],
             ),
           ),
-          ...products.map((p) => _buildProductCard(p)),
+          ...products.asMap().entries.map((entry) {
+            int pIndex = entry.key;
+            Product p = entry.value;
+            return FadeSlideEntry(
+              delay: Duration(milliseconds: 50 * pIndex),
+              child: _buildProductCard(p),
+            );
+          }),
         ],
       ),
     );
