@@ -1,61 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_animations.dart';
+import '../../../../core/providers/cart_providers.dart';
+import '../../../../core/providers/menu_providers.dart';
+import '../../../../core/models/cart_item_model.dart';
 import '../../../../shared/widgets/quantity_stepper.dart';
 import '../../../../shared/widgets/section_header.dart';
 import '../../../../shared/widgets/upsell_card.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../checkout/presentation/pages/checkout_screen.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  State<CartScreen> createState() => _CartScreenState();
+  ConsumerState<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> {
-  // Mock cart items (in a real app, this would come from a state manager)
-  final List<Map<String, dynamic>> _items = [
-    {
-      'id': '1',
-      'title': 'Royal Butter Chicken Thali',
-      'options': 'Regular, Extra Raita',
-      'price': 539.0,
-      'quantity': 1,
-      'isVeg': false,
-    },
-    {
-      'id': '2',
-      'title': 'Paneer Tikka',
-      'options': 'Spicy',
-      'price': 249.0,
-      'quantity': 1,
-      'isVeg': true,
-    }
-  ];
+class _CartScreenState extends ConsumerState<CartScreen> {
+  final TextEditingController _couponController = TextEditingController();
 
-  double get _itemTotal => _items.fold(0, (sum, item) => sum + (item['price'] * item['quantity']));
-  double get _taxes => _itemTotal * 0.05; // 5% GST
-  double get _deliveryFee => _itemTotal > 500 ? 0 : 40.0;
-  double get _grandTotal => _itemTotal + _taxes + _deliveryFee;
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
 
-  void _removeItem(int index) {
-    setState(() {
-      _items.removeAt(index);
-    });
-    if (_items.isEmpty) {
-      Navigator.pop(context);
-    }
+  void _showCouponDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          surfaceTintColor: Colors.transparent,
+          title: Text('Apply Coupon', style: AppTypography.h2(AppColors.textPrimary)),
+          content: TextField(
+            controller: _couponController,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              hintText: 'Enter Code (e.g. WELCOME50)',
+              filled: true,
+              fillColor: AppColors.background,
+              border: OutlineInputBorder(
+                borderRadius: AppRadii.borderRadiusMd,
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
+            ),
+            PrimaryButton(
+              text: 'Apply',
+              onPressed: () {
+                final success = ref.read(cartProvider.notifier).applyCoupon(_couponController.text);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success ? 'Coupon Applied!' : 'Invalid or expired coupon'),
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_items.isEmpty) {
-      return const Scaffold(); // Handled by Navigator.pop
+    final cartState = ref.watch(cartProvider);
+
+    // If cart is completely cleared from within the screen, pop it
+    // Using a post-frame callback prevents build phase exceptions
+    if (cartState.items.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+      });
+      return const Scaffold(backgroundColor: AppColors.background);
     }
+
+    // Grab some desserts/beverages for the upsell section
+    final allProducts = ref.watch(productsProvider);
+    final upsellItems = allProducts.where((p) => p.category == 'Desserts' || p.category == 'Beverages').toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -70,9 +104,14 @@ class _CartScreenState extends State<CartScreen> {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final item = _items[index];
+                  final CartItem item = cartState.items[index];
+                  
+                  // Format options string
+                  final List<String> options = item.selectedModifiers.map((m) => m.option.title).toList();
+                  final optionsStr = options.join(', ');
+
                   return Dismissible(
-                    key: Key(item['id']),
+                    key: Key(item.id),
                     direction: DismissDirection.endToStart,
                     background: Container(
                       alignment: Alignment.centerRight,
@@ -80,7 +119,9 @@ class _CartScreenState extends State<CartScreen> {
                       color: AppColors.error,
                       child: const Icon(Icons.delete, color: AppColors.textOnPrimary),
                     ),
-                    onDismissed: (_) => _removeItem(index),
+                    onDismissed: (_) {
+                      ref.read(cartProvider.notifier).removeItem(item.id);
+                    },
                     child: Padding(
                       padding: AppSpacing.screenH.copyWith(bottom: AppSpacing.lg),
                       child: Row(
@@ -89,32 +130,34 @@ class _CartScreenState extends State<CartScreen> {
                           Icon(
                             Icons.circle,
                             size: 12,
-                            color: item['isVeg'] ? AppColors.vegetarian : AppColors.nonVegetarian,
+                            color: item.product.isVeg ? AppColors.vegetarian : AppColors.nonVegetarian,
                           ),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item['title'], style: AppTypography.h3(AppColors.textPrimary)),
-                                if ((item['options'] as String).isNotEmpty) ...[
+                                Text(item.product.title, style: AppTypography.h3(AppColors.textPrimary)),
+                                if (optionsStr.isNotEmpty) ...[
                                   const SizedBox(height: 2),
-                                  Text(item['options'], style: AppTypography.body2(AppColors.textSecondary)),
+                                  Text(optionsStr, style: AppTypography.body2(AppColors.textSecondary)),
+                                ],
+                                if (item.specialInstructions.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text('Note: ${item.specialInstructions}', style: AppTypography.caption(AppColors.textTertiary)),
                                 ],
                                 const SizedBox(height: AppSpacing.sm),
-                                Text('₹${item['price'].toStringAsFixed(0)}', style: AppTypography.priceRegular(AppColors.textPrimary)),
+                                Text('₹${item.totalPrice.toStringAsFixed(0)}', style: AppTypography.priceRegular(AppColors.textPrimary)),
                               ],
                             ),
                           ),
                           QuantityStepper.standard(
-                            quantity: item['quantity'],
-                            onIncrement: () => setState(() => item['quantity']++),
+                            quantity: item.quantity,
+                            onIncrement: () {
+                              ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity + 1);
+                            },
                             onDecrement: () {
-                              if (item['quantity'] > 1) {
-                                setState(() => item['quantity']--);
-                              } else {
-                                _removeItem(index);
-                              }
+                              ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity - 1);
                             },
                           ),
                         ],
@@ -122,7 +165,7 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   );
                 },
-                childCount: _items.length,
+                childCount: cartState.items.length,
               ),
             ),
           ),
@@ -130,39 +173,42 @@ class _CartScreenState extends State<CartScreen> {
           SliverToBoxAdapter(child: Divider(color: AppColors.dividerThick)),
 
           // ─── Upsell Section ──────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionHeader(title: 'Complete Your Meal'),
-                  const SizedBox(height: AppSpacing.md),
-                  SizedBox(
-                    height: 110,
-                    child: ListView(
-                      padding: AppSpacing.screenH,
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        UpsellCard.horizontal(
-                          title: 'Mango Lassi',
-                          price: 99.0,
-                          imageUrl: 'https://images.unsplash.com/photo-1572448862527-d3c904757de6?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
-                          onAdd: () {},
-                        ),
-                        UpsellCard.horizontal(
-                          title: 'Gulab Jamun (2 pcs)',
-                          price: 79.0,
-                          imageUrl: 'https://images.unsplash.com/photo-1596706788540-362c4a9a08e6?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
-                          onAdd: () {},
-                        ),
-                      ],
+          if (upsellItems.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SectionHeader(title: 'Complete Your Meal'),
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      height: 110,
+                      child: ListView.separated(
+                        padding: AppSpacing.screenH,
+                        scrollDirection: Axis.horizontal,
+                        itemCount: upsellItems.length,
+                        separatorBuilder: (c, i) => const SizedBox(width: AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final product = upsellItems[index];
+                          return UpsellCard.horizontal(
+                            title: product.title,
+                            price: product.price,
+                            imageUrl: product.imageUrl,
+                            onAdd: () {
+                              ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('${product.title} added')),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
           SliverToBoxAdapter(child: Divider(color: AppColors.dividerThick)),
 
@@ -173,26 +219,43 @@ class _CartScreenState extends State<CartScreen> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {},
+                  onTap: _showCouponDialog,
                   borderRadius: AppRadii.borderRadiusLg,
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.borderStrong),
+                      border: Border.all(color: cartState.appliedOffer != null ? AppColors.success : AppColors.borderStrong),
                       borderRadius: AppRadii.borderRadiusLg,
-                      color: AppColors.surface,
+                      color: cartState.appliedOffer != null ? AppColors.successLight : AppColors.surface,
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.local_offer, color: AppColors.primary, size: AppSizes.iconMd),
+                        Icon(Icons.local_offer, color: cartState.appliedOffer != null ? AppColors.success : AppColors.primary, size: AppSizes.iconMd),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
-                          child: Text(
-                            'Apply Coupon',
-                            style: AppTypography.subtitle2(AppColors.textPrimary),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                cartState.appliedOffer != null ? '${cartState.appliedOffer!.code} Applied' : 'Apply Coupon',
+                                style: AppTypography.subtitle2(cartState.appliedOffer != null ? AppColors.success : AppColors.textPrimary),
+                              ),
+                              if (cartState.appliedOffer != null)
+                                Text('You saved ₹${cartState.discount.toStringAsFixed(0)}', style: AppTypography.caption(AppColors.success)),
+                            ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textTertiary),
+                        if (cartState.appliedOffer != null)
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 16, color: AppColors.success),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              ref.read(cartProvider.notifier).removeCoupon();
+                            },
+                          )
+                        else
+                          const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textTertiary),
                       ],
                     ),
                   ),
@@ -217,14 +280,24 @@ class _CartScreenState extends State<CartScreen> {
                   children: [
                     Text('Bill Details', style: AppTypography.subtitle1(AppColors.textPrimary)),
                     const SizedBox(height: AppSpacing.md),
-                    _buildBillRow('Item Total', _itemTotal),
+                    _buildBillRow('Item Total', cartState.itemTotal),
+                    if (cartState.discount > 0) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Item Discount', style: AppTypography.body2(AppColors.success)),
+                          Text('-₹${cartState.discount.toStringAsFixed(0)}', style: AppTypography.body2(AppColors.success)),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.sm),
-                    _buildBillRow('Taxes & Charges', _taxes),
+                    _buildBillRow('Taxes & Charges', cartState.taxes),
                     const SizedBox(height: AppSpacing.sm),
                     _buildBillRow(
                       'Delivery Fee',
-                      _deliveryFee,
-                      isFree: _deliveryFee == 0,
+                      cartState.deliveryFee,
+                      isFree: cartState.deliveryFee == 0,
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -234,7 +307,7 @@ class _CartScreenState extends State<CartScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('To Pay', style: AppTypography.h2(AppColors.textPrimary)),
-                        Text('₹${_grandTotal.toStringAsFixed(0)}', style: AppTypography.priceLarge(AppColors.textPrimary)),
+                        Text('₹${cartState.grandTotal.toStringAsFixed(0)}', style: AppTypography.priceLarge(AppColors.textPrimary)),
                       ],
                     ),
                   ],
@@ -244,7 +317,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
 
           // ─── Savings Banner ────────────────────────────────
-          if (_deliveryFee == 0)
+          if (cartState.deliveryFee == 0 || cartState.discount > 0)
             SliverToBoxAdapter(
               child: Padding(
                 padding: AppSpacing.screenAll,
@@ -259,9 +332,11 @@ class _CartScreenState extends State<CartScreen> {
                     children: [
                       const Icon(Icons.check_circle, color: AppColors.success, size: AppSizes.iconMd),
                       const SizedBox(width: AppSpacing.md),
-                      Text(
-                        'You saved ₹40 on delivery!',
-                        style: AppTypography.subtitle2(AppColors.success),
+                      Expanded(
+                        child: Text(
+                          'You saved ₹${((cartState.deliveryFee == 0 ? 40 : 0) + cartState.discount).toStringAsFixed(0)} on this order!',
+                          style: AppTypography.subtitle2(AppColors.success),
+                        ),
                       ),
                     ],
                   ),
@@ -288,7 +363,7 @@ class _CartScreenState extends State<CartScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('₹${_grandTotal.toStringAsFixed(0)}', style: AppTypography.priceLarge(AppColors.textPrimary)),
+                  Text('₹${cartState.grandTotal.toStringAsFixed(0)}', style: AppTypography.priceLarge(AppColors.textPrimary)),
                   Text('View detailed bill', style: AppTypography.caption(AppColors.primary).copyWith(fontWeight: FontWeight.w600)),
                 ],
               ),
@@ -299,7 +374,7 @@ class _CartScreenState extends State<CartScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      AppPageRoute(page: CheckoutScreen(cartTotal: _grandTotal)),
+                      AppPageRoute(page: CheckoutScreen(cartTotal: cartState.grandTotal)),
                     );
                   },
                 ),

@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/providers/cart_providers.dart';
+import '../../../../core/providers/user_providers.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
-class CheckoutScreen extends StatefulWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   final double cartTotal;
   
   const CheckoutScreen({super.key, required this.cartTotal});
 
   @override
-  State<CheckoutScreen> createState() => _CheckoutScreenState();
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProviderStateMixin {
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTickerProviderStateMixin {
   bool _isContactless = true;
   double _tipAmount = 0.0;
-  String _selectedPayment = 'upi_gpay';
+  String _selectedPayment = '';
   
   bool _isProcessing = false;
   bool _isSuccess = false;
@@ -38,6 +41,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pre-select first payment method if empty
+    if (_selectedPayment.isEmpty) {
+      final user = ref.read(userProvider);
+      if (user.paymentMethods.isNotEmpty) {
+        _selectedPayment = user.paymentMethods.first.id;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _successAnimController.dispose();
     super.dispose();
@@ -50,7 +65,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       _isProcessing = true;
     });
     
-    // Simulate network delay for payment
+    // Simulate network delay for payment gateway
     await Future.delayed(const Duration(seconds: 2));
     
     if (!mounted) return;
@@ -61,7 +76,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     
     _successAnimController.forward();
     
-    // Navigate away after success
+    // Log the order (simulate backend save)
+    // In a real app we'd dispatch to ordersProvider here, but for demo
+    // we just clear the cart.
+    ref.read(cartProvider.notifier).clearCart();
+    
+    // Navigate away after success animation
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);
@@ -75,6 +95,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(userProvider);
+    final deliveryAddress = user.addresses.firstWhere((a) => a.isDefault, orElse: () => user.addresses.first);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -107,6 +130,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                                 height: 120,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) => Container(height: 120, color: AppColors.surfaceMuted),
                               ),
                               Container(
                                 height: 120,
@@ -128,9 +152,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Delivery to Home', style: AppTypography.h3(AppColors.textPrimary)),
+                              Text(deliveryAddress.title, style: AppTypography.h3(AppColors.textPrimary)),
                               const SizedBox(height: AppSpacing.xs),
-                              Text('456 Palm Avenue, Koramangala', style: AppTypography.body2(AppColors.textSecondary)),
+                              Text(deliveryAddress.fullAddress, style: AppTypography.body2(AppColors.textSecondary)),
                               const SizedBox(height: AppSpacing.lg),
                               TextField(
                                 decoration: InputDecoration(
@@ -183,7 +207,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: InkWell(
-                              onTap: () {},
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Custom tip dialog not implemented in demo')));
+                              },
                               borderRadius: AppRadii.borderRadiusPill,
                               child: Container(
                                 height: AppSizes.buttonHeightMd,
@@ -218,27 +244,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                       Text('Payment Method', style: AppTypography.subtitle1(AppColors.textPrimary)),
                       const SizedBox(height: AppSpacing.md),
                       
-                      _buildPaymentOption(
-                        id: 'upi_gpay',
-                        title: 'Google Pay',
-                        subtitle: 'Linked to 9876543210',
-                        iconData: Icons.g_mobiledata,
-                        iconColor: Colors.blue,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      
-                      _buildPaymentOption(
-                        id: 'card_4242',
-                        title: 'HDFC Bank Credit Card',
-                        subtitle: '•••• •••• •••• 4242',
-                        iconData: Icons.credit_card,
-                        iconColor: Colors.indigo,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
+                      for (var payment in user.paymentMethods) ...[
+                        _buildPaymentOption(
+                          id: payment.id,
+                          title: payment.title,
+                          subtitle: payment.subtitle,
+                          iconData: payment.type == 'UPI' ? Icons.g_mobiledata : Icons.credit_card,
+                          iconColor: payment.type == 'UPI' ? Colors.blue : Colors.indigo,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
                       
                       // Add new card
                       InkWell(
-                        onTap: () {},
+                        onTap: () {
+                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add card flow simulated.')));
+                        },
                         borderRadius: AppRadii.borderRadiusMd,
                         child: Container(
                           padding: const EdgeInsets.all(AppSpacing.lg),

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 
-/// Reusable section header with title and optional trailing action.
-///
-/// Used consistently across Home, Cart, Profile, and Menu screens
-/// for "Order Again", "Complete Your Meal", "Rewards", etc.
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? actionText;
@@ -27,12 +23,13 @@ class SectionHeader extends StatelessWidget {
       padding: AppSpacing.screenH,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Text(
               title,
               style: AppTypography.h2(AppColors.textPrimary),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (trailing != null) trailing!,

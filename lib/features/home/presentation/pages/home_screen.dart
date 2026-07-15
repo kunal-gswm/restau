@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_animations.dart';
+import '../../../../core/providers/cart_providers.dart';
+import '../../../../core/providers/menu_providers.dart';
+import '../../../../core/providers/user_providers.dart';
 import '../../../../shared/widgets/cart_bar.dart';
 import '../../../../shared/widgets/section_header.dart';
 import '../widgets/loyalty_summary_card.dart';
@@ -10,45 +14,38 @@ import '../widgets/order_again_card.dart';
 import '../widgets/category_pill.dart';
 import '../../../menu/presentation/pages/menu_screen.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
+import '../../../offers/presentation/pages/offers_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentNavIndex = 0;
-  int _cartItems = 0;
-  double _cartTotal = 0.0;
-
-  void _addToCart(double price) {
-    setState(() {
-      _cartItems++;
-      _cartTotal += price;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Handle bottom nav tab switching
+    final cartState = ref.watch(cartProvider);
+
     return Scaffold(
       body: IndexedStack(
         index: _currentNavIndex,
         children: [
           _buildHomeBody(context),
           const MenuScreen(),
-          _buildOffersPlaceholder(),
+          const OffersScreen(),
           const ProfileScreen(),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: _cartItems > 0
+      floatingActionButton: cartState.items.isNotEmpty
           ? CartBar(
-              itemCount: _cartItems,
-              total: _cartTotal,
+              itemCount: cartState.totalItemCount,
+              total: cartState.grandTotal,
               onTap: () {
                 Navigator.push(
                   context,
@@ -104,39 +101,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildOffersPlaceholder() {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.xxl),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.local_offer, color: AppColors.primary, size: 48),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            Text('Special Offers', style: AppTypography.h1(AppColors.textPrimary)),
-            const SizedBox(height: AppSpacing.sm),
-            Padding(
-              padding: AppSpacing.screenH,
-              child: Text(
-                'Exclusive deals and seasonal promotions\ncoming your way!',
-                style: AppTypography.body2(AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildHomeBody(BuildContext context) {
+    final user = ref.watch(userProvider);
+    final categories = ref.watch(categoriesProvider);
+    final favorites = ref.watch(favoriteProductsProvider);
+    final cartState = ref.watch(cartProvider);
+
     return CustomScrollView(
       slivers: [
         // ─── Premium App Bar ───────────────────────────────────
@@ -155,9 +125,12 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Icon(Icons.location_on, size: AppSizes.iconSm, color: AppColors.primary),
                 const SizedBox(width: AppSpacing.xs),
-                Text(
-                  'Home',
-                  style: AppTypography.subtitle2(AppColors.textPrimary),
+                Expanded(
+                  child: Text(
+                    user.addresses.firstWhere((a) => a.isDefault, orElse: () => user.addresses.first).title,
+                    style: AppTypography.subtitle2(AppColors.textPrimary),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const Icon(Icons.keyboard_arrow_down, size: AppSizes.iconSm, color: AppColors.textTertiary),
               ],
@@ -181,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
               tooltip: 'Search',
               onPressed: () {
                 setState(() => _currentNavIndex = 1);
+                // Trigger search open in MenuScreen
               },
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -204,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: AppTypography.body1(AppColors.textTertiary),
                     ),
                     Text(
-                      'Alex',
+                      user.name.split(' ').first,
                       style: AppTypography.display(AppColors.textPrimary),
                     ),
                   ],
@@ -217,75 +191,91 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: AppSpacing.sectionGap),
 
               // ─── Loyalty ───────────────────────────────────────
-              LoyaltySummaryCard(points: 350, onTap: () {}),
+              LoyaltySummaryCard(
+                points: user.loyaltyPoints, 
+                onTap: () {
+                  setState(() => _currentNavIndex = 3); // Go to profile
+                },
+              ),
 
               const SizedBox(height: AppSpacing.sectionGap),
 
               // ─── Categories ────────────────────────────────────
               SizedBox(
                 height: 52,
-                child: ListView(
+                child: ListView.separated(
                   padding: AppSpacing.screenH,
                   scrollDirection: Axis.horizontal,
-                  children: const [
-                    CategoryPill(title: 'All', emoji: '✨', isSelected: true),
-                    SizedBox(width: AppSpacing.sm),
-                    CategoryPill(title: 'Thalis', emoji: '🍛'),
-                    SizedBox(width: AppSpacing.sm),
-                    CategoryPill(title: 'Biryanis', emoji: '🍚'),
-                    SizedBox(width: AppSpacing.sm),
-                    CategoryPill(title: 'Tandoor', emoji: '🔥'),
-                    SizedBox(width: AppSpacing.sm),
-                    CategoryPill(title: 'Drinks', emoji: '🥤'),
-                    SizedBox(width: AppSpacing.sm),
-                    CategoryPill(title: 'Desserts', emoji: '🍰'),
-                  ],
+                  itemCount: categories.length + 1,
+                  separatorBuilder: (c, i) => const SizedBox(width: AppSpacing.sm),
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return CategoryPill(
+                        title: 'All', 
+                        emoji: '✨', 
+                        isSelected: ref.watch(selectedCategoryProvider) == 'All',
+                        onTap: () {
+                          ref.read(selectedCategoryProvider.notifier).setCategory(categories.first);
+                          setState(() => _currentNavIndex = 1);
+                        },
+                      );
+                    }
+                    final category = categories[index - 1];
+                    // Map emoji
+                    String emoji = '🍛';
+                    if (category == 'Biryani') emoji = '🍚';
+                    if (category == 'Tandoor') emoji = '🔥';
+                    if (category == 'Beverages') emoji = '🥤';
+                    if (category == 'Desserts') emoji = '🍰';
+                    
+                    return CategoryPill(
+                      title: category,
+                      emoji: emoji,
+                      isSelected: ref.watch(selectedCategoryProvider) == category,
+                      onTap: () {
+                        ref.read(selectedCategoryProvider.notifier).setCategory(category);
+                        setState(() => _currentNavIndex = 1);
+                      },
+                    );
+                  },
                 ),
               ),
 
               const SizedBox(height: AppSpacing.sectionGap),
 
               // ─── Order Again ───────────────────────────────────
-              SectionHeader(
-                title: 'Your Favourites',
-                actionText: 'See all',
-                onAction: () {},
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                height: 225,
-                child: ListView(
-                  padding: AppSpacing.screenH,
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    OrderAgainCard(
-                      title: 'Butter Chicken Thali',
-                      contextText: 'Your Friday dinner',
-                      price: '₹349',
-                      imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-                      onReorder: () => _addToCart(349.0),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    OrderAgainCard(
-                      title: 'Paneer Tikka',
-                      contextText: 'Ordered 2 weeks ago',
-                      price: '₹249',
-                      imageUrl: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-                      onReorder: () => _addToCart(249.0),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    OrderAgainCard(
-                      title: 'Chicken Biryani',
-                      contextText: 'Most ordered',
-                      price: '₹299',
-                      imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-                      onReorder: () => _addToCart(299.0),
-                    ),
-                  ],
+              if (favorites.isNotEmpty) ...[
+                SectionHeader(
+                  title: 'Your Favourites',
+                  actionText: 'See all',
+                  onAction: () {
+                     setState(() => _currentNavIndex = 1);
+                  },
                 ),
-              ),
-
-              const SizedBox(height: AppSpacing.sectionGap),
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  height: 225,
+                  child: ListView.separated(
+                    padding: AppSpacing.screenH,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: favorites.length,
+                    separatorBuilder: (c, i) => const SizedBox(width: AppSpacing.md),
+                    itemBuilder: (context, index) {
+                      final product = favorites[index];
+                      return OrderAgainCard(
+                        title: product.title,
+                        contextText: product.category,
+                        price: '₹${product.price.toInt()}',
+                        imageUrl: product.imageUrl,
+                        onReorder: () {
+                           ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+              ],
 
               // ─── Today's Special ───────────────────────────────
               SectionHeader(title: 'Chef\'s Recommendation'),
@@ -293,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildTodaysSpecial(context),
 
               // Bottom padding for FAB
-              SizedBox(height: _cartItems > 0 ? 120 : 40),
+              SizedBox(height: cartState.items.isNotEmpty ? 120 : 40),
             ],
           ),
         ),
@@ -302,6 +292,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeroBanner(BuildContext context) {
+    // Dynamic Hero from recommended products
+    final recommendations = ref.watch(recommendedProductsProvider);
+    if (recommendations.isEmpty) return const SizedBox.shrink();
+    
+    final heroProduct = recommendations.last; // using the last bestseller for hero
+
     return Container(
       margin: AppSpacing.screenH,
       height: 280,
@@ -314,14 +310,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Background image
             Image.network(
-              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
+              heroProduct.imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (c, e, s) => Container(color: AppColors.surfaceMuted),
             ),
-
-            // Gradient overlay for text readability
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -336,15 +329,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
-            // Content overlay
             Padding(
               padding: const EdgeInsets.all(AppSpacing.xxl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Seasonal tag
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
@@ -367,23 +357,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-
-                  // Title
                   Text(
-                    'Smoked Tandoori\nPlatter',
+                    heroProduct.title.replaceAll(' ', '\n'), // Simple wrap logic
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.h1(AppColors.textInverse).copyWith(
                       fontSize: 28,
                       height: 1.15,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-
-                  // CTA
                   Material(
                     color: AppColors.surface,
                     borderRadius: AppRadii.borderRadiusPill,
                     child: InkWell(
-                      onTap: () => _addToCart(799.0),
+                      onTap: () {
+                        ref.read(cartProvider.notifier).addItem(product: heroProduct, quantity: 1);
+                      },
                       borderRadius: AppRadii.borderRadiusPill,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -394,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Order Now  •  ₹799',
+                              'Order Now  •  ₹${heroProduct.price.toInt()}',
                               style: AppTypography.subtitle2(AppColors.textPrimary),
                             ),
                             const SizedBox(width: AppSpacing.sm),
@@ -414,6 +404,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTodaysSpecial(BuildContext context) {
+    final recommendations = ref.watch(recommendedProductsProvider);
+    if (recommendations.isEmpty) return const SizedBox.shrink();
+    
+    final pickProduct = recommendations.first; // First bestseller
+
     return Padding(
       padding: AppSpacing.screenH,
       child: Container(
@@ -425,13 +420,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with badge
             Stack(
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xxl)),
                   child: Image.network(
-                    'https://images.unsplash.com/photo-1585937421612-70a008356fbe?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+                    pickProduct.imageUrl,
                     height: 220,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -470,30 +464,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-
-            // Content
             Padding(
               padding: const EdgeInsets.all(AppSpacing.xxl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Royal Butter Chicken Thali',
+                    pickProduct.title,
                     style: AppTypography.h1(AppColors.textPrimary).copyWith(fontSize: 26),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Slow-cooked in our signature makhani gravy, served with naan, dal, rice, raita, and pickles. A complete feast.',
+                    pickProduct.description,
                     style: AppTypography.body1(AppColors.textSecondary).copyWith(height: 1.5),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
-
-                  // Price + CTA
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '₹499',
+                        '₹${pickProduct.price.toInt()}',
                         style: AppTypography.priceDisplay(AppColors.textPrimary),
                       ),
                       const Spacer(),
@@ -504,7 +496,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: double.infinity,
                     height: AppSizes.buttonHeightLg,
                     child: ElevatedButton(
-                      onPressed: () => _addToCart(499.0),
+                      onPressed: () {
+                         ref.read(cartProvider.notifier).addItem(product: pickProduct, quantity: 1);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.textOnPrimary,

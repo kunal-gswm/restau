@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/providers/user_providers.dart';
 import '../../../../shared/widgets/section_header.dart';
 import '../../../../shared/widgets/stat_card.dart';
 import '../../../../shared/widgets/reward_card.dart';
 import '../../../../shared/widgets/order_card.dart';
 import '../../../../shared/widgets/settings_tile.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProviderStateMixin {
   late AnimationController _cardFlipController;
   late Animation<double> _cardFlipAnimation;
   bool _isCardFlipped = false;
@@ -67,6 +69,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(userProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -98,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         ..setEntry(3, 2, 0.001)
                         ..rotateY(angle),
                       alignment: Alignment.center,
-                      child: isFront ? _buildCardFront() : Transform(
+                      child: isFront ? _buildCardFront(user.name, user.loyaltyTier) : Transform(
                         alignment: Alignment.center,
                         transform: Matrix4.identity()..rotateY(math.pi),
                         child: _buildCardBack(),
@@ -115,12 +119,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             child: Padding(
               padding: AppSpacing.screenH,
               child: Row(
-                children: const [
-                  Expanded(child: StatCard(label: 'Orders', value: '24')),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(child: StatCard(label: 'Saved', value: '₹1,240')),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(child: StatCard(label: 'Points', value: '1,450', isHighlighted: true)),
+                children: [
+                  const Expanded(child: StatCard(label: 'Orders', value: '24')),
+                  const SizedBox(width: AppSpacing.md),
+                  const Expanded(child: StatCard(label: 'Saved', value: '₹1,240')),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(child: StatCard(label: 'Points', value: user.loyaltyPoints.toString(), isHighlighted: true)),
                 ],
               ),
             ),
@@ -162,9 +166,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           children: [
                             const Icon(Icons.stars, color: AppColors.accentGold, size: AppSizes.iconXl),
                             const SizedBox(height: AppSpacing.sm),
-                            Text('Grill Master', style: AppTypography.h1(AppColors.accentGold)),
+                            Text(user.loyaltyTier, style: AppTypography.h1(AppColors.accentGold)),
                             const SizedBox(height: 4),
-                            Text('550 to Pit Boss', style: AppTypography.subtitle2(AppColors.textSecondary)),
+                            Text('${2000 - user.loyaltyPoints} to Pit Boss', style: AppTypography.subtitle2(AppColors.textSecondary)),
                           ],
                         ),
                       ],
@@ -193,11 +197,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   child: ListView(
                     padding: AppSpacing.screenH,
                     scrollDirection: Axis.horizontal,
-                    children: const [
-                      RewardCard(title: 'Mango Lassi', cost: '400 pts', isUnlocked: true, icon: Icons.local_drink),
-                      RewardCard(title: 'Paneer Tikka', cost: '800 pts', isUnlocked: true),
-                      RewardCard(title: 'Signature Thali', cost: '1500 pts', isUnlocked: false),
-                      RewardCard(title: 'Family Feast', cost: '2500 pts', isUnlocked: false),
+                    children: [
+                      RewardCard(title: 'Mango Lassi', cost: '400 pts', isUnlocked: user.loyaltyPoints >= 400, icon: Icons.local_drink),
+                      RewardCard(title: 'Paneer Tikka', cost: '800 pts', isUnlocked: user.loyaltyPoints >= 800),
+                      RewardCard(title: 'Signature Thali', cost: '1500 pts', isUnlocked: user.loyaltyPoints >= 1500),
+                      RewardCard(title: 'Family Feast', cost: '2500 pts', isUnlocked: user.loyaltyPoints >= 2500),
                     ],
                   ),
                 ),
@@ -261,8 +265,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   const SizedBox(height: AppSpacing.md),
                   SettingsGroup(
                     children: [
-                      SettingsTile(icon: Icons.location_on_outlined, title: 'Saved Addresses', onTap: () {}),
-                      SettingsTile(icon: Icons.payment_outlined, title: 'Payment Methods', onTap: () {}),
+                      SettingsTile(icon: Icons.location_on_outlined, title: 'Saved Addresses (${user.addresses.length})', onTap: () {}),
+                      SettingsTile(icon: Icons.payment_outlined, title: 'Payment Methods (${user.paymentMethods.length})', onTap: () {}),
                       SettingsTile(icon: Icons.favorite_border, title: 'Favorites', onTap: () {}),
                     ],
                   ),
@@ -316,7 +320,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildCardFront() {
+  Widget _buildCardFront(String name, String tier) {
     return Container(
       height: 180,
       width: double.infinity,
@@ -347,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   color: AppColors.textOnPrimary.withValues(alpha: 0.2),
                   borderRadius: AppRadii.borderRadiusMd,
                 ),
-                child: Text('GRILL MASTER', style: AppTypography.badge(AppColors.textOnPrimary)),
+                child: Text(tier.toUpperCase(), style: AppTypography.badge(AppColors.textOnPrimary)),
               ),
             ],
           ),
@@ -361,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Alex Doe', style: AppTypography.h1(AppColors.textOnPrimary)),
+                  Text(name, style: AppTypography.h1(AppColors.textOnPrimary)),
                   Text('Member since 2024', style: AppTypography.caption(AppColors.textOnPrimary.withValues(alpha: 0.7))),
                 ],
               ),

@@ -1,90 +1,126 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_animations.dart';
-import '../../../../shared/widgets/cart_bar.dart';
+import '../../../../core/providers/menu_providers.dart';
+import '../../../../core/providers/cart_providers.dart';
+import '../../../../core/models/product_model.dart';
 import '../../../../shared/widgets/search_input.dart';
 import '../../../../shared/widgets/quantity_stepper.dart';
 import 'product_details_screen.dart';
 
-class MenuScreen extends StatefulWidget {
+class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
 
   @override
-  State<MenuScreen> createState() => _MenuScreenState();
+  ConsumerState<MenuScreen> createState() => _MenuScreenState();
 }
 
-class _MenuScreenState extends State<MenuScreen> {
+class _MenuScreenState extends ConsumerState<MenuScreen> {
   final ScrollController _scrollController = ScrollController();
-  int _selectedCategoryIndex = 0;
-  
-  // Dummy cart state for demo
-  int _cartItems = 0;
-  double _cartTotal = 0.0;
-  bool _isFavorite = false;
+  final Map<String, GlobalKey> _categoryKeys = {};
+  bool _isManualScrolling = false; // Flag to prevent scrollspy from overriding manual tab clicks
 
-  final List<String> _categories = [
-    'Combos',
-    'Curries',
-    'Biryani',
-    'Tandoor',
-    'Breads',
-    'Desserts',
-  ];
-
-  void _addToCart(double price) {
-    setState(() {
-      _cartItems++;
-      _cartTotal += price;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _onScroll() {
+    if (_isManualScrolling) return;
+
+    // Simple scroll spy logic
+    String? visibleCategory;
+    for (var entry in _categoryKeys.entries) {
+      final key = entry.value;
+      if (key.currentContext != null) {
+        final renderObject = key.currentContext!.findRenderObject() as RenderBox;
+        final position = renderObject.localToGlobal(Offset.zero).dy;
+        // If the section is near the top of the screen (adjusting for app bar + sticky header)
+        if (position > 0 && position < 350) {
+          visibleCategory = entry.key;
+          break;
+        }
+      }
+    }
+
+    if (visibleCategory != null) {
+      final currentCategory = ref.read(selectedCategoryProvider);
+      if (currentCategory != visibleCategory && currentCategory != 'All') {
+        // We defer state update to avoid setState during build or scroll notification
+        Future.microtask(() {
+          ref.read(selectedCategoryProvider.notifier).setCategory(visibleCategory!);
+        });
+      }
+    }
+  }
+
+  void _scrollToCategory(String category) {
+    if (category == 'All') return;
+    final key = _categoryKeys[category];
+    if (key != null && key.currentContext != null) {
+      _isManualScrolling = true;
+      ref.read(selectedCategoryProvider.notifier).setCategory(category);
+      Scrollable.ensureVisible(
+        key.currentContext!,
+        duration: AppDurations.normal,
+        curve: Curves.easeInOut,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+      ).then((_) => _isManualScrolling = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final groupedProducts = ref.watch(menuByCategoryProvider);
+    final categories = ref.watch(categoriesProvider);
+    final searchQuery = ref.watch(searchQueryProvider);
+    final searchResults = ref.watch(searchResultsProvider);
+    
+    // Ensure keys exist for all categories
+    for (var category in categories) {
+      _categoryKeys.putIfAbsent(category, () => GlobalKey());
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              _buildSliverAppBar(),
-              _buildStickyCategoryBar(),
-              _buildMenuSection('Combos'),
-              _buildMenuSection('Curries'),
-              _buildMenuSection('Biryani'),
-              _buildMenuSection('Tandoor'),
-              _buildMenuSection('Breads'),
-              _buildMenuSection('Desserts'),
-              
-              // Bottom padding for cart FAB
-              SliverToBoxAdapter(
-                child: SizedBox(height: _cartItems > 0 ? 120 : 40),
-              ),
-            ],
-          ),
-
-          // Floating Cart Bar
-          if (_cartItems > 0)
-            Positioned(
-              bottom: AppSpacing.lg,
-              left: 0,
-              right: 0,
-              child: CartBar(
-                itemCount: _cartItems,
-                total: _cartTotal,
-                onTap: () {
-                  // Navigate to cart
-                },
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          _buildSliverAppBar(),
+          
+          if (searchQuery.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.screenPadding),
+                child: Text('Search Results for "$searchQuery"', style: AppTypography.h2(AppColors.textPrimary)),
               ),
             ),
+            SliverToBoxAdapter(
+              child: Column(
+                children: searchResults.map((product) => _buildProductCard(product)).toList(),
+              ),
+            ),
+          ] else ...[
+            _buildStickyCategoryBar(categories),
+            for (var category in groupedProducts.keys)
+              _buildMenuSection(category, groupedProducts[category]!),
+          ],
+
+          // Bottom padding for cart FAB (managed by HomeScreen)
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 120),
+          ),
         ],
       ),
     );
@@ -98,29 +134,32 @@ class _MenuScreenState extends State<MenuScreen> {
       surfaceTintColor: Colors.transparent,
       actions: [
         IconButton(
-          icon: Icon(
-            _isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: _isFavorite ? AppColors.primary : AppColors.textInverse,
-          ),
-          onPressed: () => setState(() => _isFavorite = !_isFavorite),
+          icon: const Icon(Icons.favorite_border, color: AppColors.textInverse),
+          onPressed: () {
+            // Simulated restaurant favorite action
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Khana added to favorites!')),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.share, color: AppColors.textInverse),
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Opening share dialog...')),
+            );
+          },
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Restaurant Cover Image
             Image.network(
               'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
               fit: BoxFit.cover,
               errorBuilder: (c, e, s) => Container(color: AppColors.surfaceMuted),
             ),
-            
-            // Gradient Overlay
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -135,8 +174,6 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
               ),
             ),
-
-            // Restaurant Info
             Positioned(
               bottom: AppSpacing.lg,
               left: AppSpacing.screenPadding,
@@ -195,8 +232,12 @@ class _MenuScreenState extends State<MenuScreen> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  const SearchInput(
+                  SearchInput(
                     hintText: 'Search in Khana...',
+                    isInteractive: true,
+                    onChanged: (val) {
+                      ref.read(searchQueryProvider.notifier).setQuery(val);
+                    },
                   ),
                 ],
               ),
@@ -207,7 +248,12 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildStickyCategoryBar() {
+  Widget _buildStickyCategoryBar(List<String> categories) {
+    final selectedCategory = ref.watch(selectedCategoryProvider);
+    
+    // Add "All" to the beginning for the horizontal scroll
+    final displayCategories = ['All', ...categories];
+
     return SliverPersistentHeader(
       pinned: true,
       delegate: _StickyCategoryDelegate(
@@ -217,9 +263,10 @@ class _MenuScreenState extends State<MenuScreen> {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: AppSpacing.screenH,
-            itemCount: _categories.length,
+            itemCount: displayCategories.length,
             itemBuilder: (context, index) {
-              final isSelected = index == _selectedCategoryIndex;
+              final cat = displayCategories[index];
+              final isSelected = cat == selectedCategory;
               return Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.sm),
                 child: Material(
@@ -227,7 +274,12 @@ class _MenuScreenState extends State<MenuScreen> {
                   child: InkWell(
                     borderRadius: AppRadii.borderRadiusPill,
                     onTap: () {
-                      setState(() => _selectedCategoryIndex = index);
+                      if (cat == 'All') {
+                        ref.read(selectedCategoryProvider.notifier).setCategory('All');
+                        _scrollController.animateTo(0, duration: AppDurations.normal, curve: Curves.easeInOut);
+                      } else {
+                        _scrollToCategory(cat);
+                      }
                     },
                     child: AnimatedContainer(
                       duration: AppDurations.normal,
@@ -244,7 +296,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          _categories[index],
+                          cat,
                           style: AppTypography.subtitle2(
                             isSelected ? AppColors.textInverse : AppColors.textSecondary,
                           ),
@@ -261,8 +313,9 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildMenuSection(String category) {
+  Widget _buildMenuSection(String category, List<Product> products) {
     return SliverToBoxAdapter(
+      key: _categoryKeys[category],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -281,48 +334,18 @@ class _MenuScreenState extends State<MenuScreen> {
               ],
             ),
           ),
-          _buildProductCard(
-            title: '$category Special 1',
-            description: 'A delicious preparation with authentic spices, served hot.',
-            price: 299,
-            isBestseller: true,
-            isVeg: true,
-            imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
-          ),
-          _buildProductCard(
-            title: '$category Special 2',
-            description: 'Classic recipe passed down through generations.',
-            price: 349,
-            isBestseller: false,
-            isVeg: false,
-            imageUrl: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
-          ),
-          _buildProductCard(
-            title: '$category Special 3',
-            description: 'Chef\'s special with a modern twist.',
-            price: 249,
-            isBestseller: false,
-            isVeg: true,
-            imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
-          ),
+          ...products.map((p) => _buildProductCard(p)),
         ],
       ),
     );
   }
 
-  Widget _buildProductCard({
-    required String title,
-    required String description,
-    required double price,
-    required bool isBestseller,
-    required bool isVeg,
-    required String imageUrl,
-  }) {
+  Widget _buildProductCard(Product product) {
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
-          AppDialogRoute(page: const ProductDetailsScreen()),
+          AppDialogRoute(page: ProductDetailsScreen(product: product)),
         );
       },
       child: Padding(
@@ -339,9 +362,9 @@ class _MenuScreenState extends State<MenuScreen> {
                       Icon(
                         Icons.circle,
                         size: 12,
-                        color: isVeg ? AppColors.vegetarian : AppColors.nonVegetarian,
+                        color: product.isVeg ? AppColors.vegetarian : AppColors.nonVegetarian,
                       ),
-                      if (isBestseller) ...[
+                      if (product.isBestseller) ...[
                         const SizedBox(width: AppSpacing.sm),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -366,17 +389,17 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    title,
+                    product.title,
                     style: AppTypography.h3(AppColors.textPrimary),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '₹${price.toStringAsFixed(0)}',
+                    '₹${product.price.toStringAsFixed(0)}',
                     style: AppTypography.priceRegular(AppColors.textPrimary),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    description,
+                    product.description,
                     style: AppTypography.body2(AppColors.textSecondary),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -392,7 +415,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 ClipRRect(
                   borderRadius: AppRadii.borderRadiusMd,
                   child: Image.network(
-                    imageUrl,
+                    product.imageUrl,
                     width: AppSizes.productImageMd,
                     height: AppSizes.productImageMd,
                     fit: BoxFit.cover,
@@ -412,7 +435,9 @@ class _MenuScreenState extends State<MenuScreen> {
                       borderRadius: AppRadii.borderRadiusPill,
                     ),
                     child: AddToCartButton(
-                      onTap: () => _addToCart(price),
+                      onTap: () {
+                         ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
+                      },
                     ),
                   ),
                 ),
