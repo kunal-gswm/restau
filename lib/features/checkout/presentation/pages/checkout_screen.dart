@@ -483,8 +483,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
             prefixText: '₹ ',
           ),
         ),
+        actionsAlignment: MainAxisAlignment.end,
+        actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
+          ),
           ElevatedButton(
             onPressed: () {
               final val = double.tryParse(ctrl.text.trim());

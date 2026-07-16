@@ -55,8 +55,13 @@ class PaymentMethodsScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Remove Payment Method'),
         content: Text('Are you sure you want to remove $methodName?'),
+        actionsAlignment: MainAxisAlignment.end,
+        actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
+          ),
           ElevatedButton(
             onPressed: () {
               ref.read(userProvider.notifier).deletePaymentMethod(methodName);

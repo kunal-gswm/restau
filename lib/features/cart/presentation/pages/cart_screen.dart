@@ -52,13 +52,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               ),
             ),
           ),
+          actionsAlignment: MainAxisAlignment.end,
+          actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
             ),
-            PrimaryButton(
-              text: 'Apply',
+            ElevatedButton(
               onPressed: () {
                 final success = ref.read(cartProvider.notifier).applyCoupon(_couponController.text);
                 Navigator.pop(context);
@@ -69,6 +70,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                 );
               },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+              child: const Text('Apply'),
             ),
           ],
         );
@@ -129,14 +132,17 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         builder: (context) => AlertDialog(
                           title: Text('Remove Item', style: AppTypography.h3(AppColors.textPrimary)),
                           content: Text('Are you sure you want to remove ${item.product.title} from your cart?', style: AppTypography.body2(AppColors.textSecondary)),
+                          actionsAlignment: MainAxisAlignment.end,
+                          actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(false),
-                              child: Text('Cancel', style: AppTypography.subtitle2(AppColors.textSecondary)),
+                              child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
                             ),
-                            TextButton(
+                            ElevatedButton(
                               onPressed: () => Navigator.of(context).pop(true),
-                              child: Text('Remove', style: AppTypography.subtitle2(AppColors.error)),
+                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: AppColors.textOnPrimary),
+                              child: const Text('Remove'),
                             ),
                           ],
                         ),

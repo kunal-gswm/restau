@@ -340,13 +340,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                             backgroundColor: AppColors.surface,
                             title: Text('Log Out', style: AppTypography.h2(AppColors.textPrimary)),
                             content: Text('Are you sure you want to log out?', style: AppTypography.body1(AppColors.textSecondary)),
+                            actionsAlignment: MainAxisAlignment.end,
+                            actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, elevation: 0),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: AppColors.textOnPrimary, elevation: 0),
                                 onPressed: () {
                                   Navigator.pop(context); // Close dialog
                                   Navigator.of(context, rootNavigator: true).pushReplacement(
@@ -480,8 +482,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
       builder: (context) => AlertDialog(
         title: Text('Redeem $rewardName?'),
         content: Text('This will use $cost points from your balance.'),
+        actionsAlignment: MainAxisAlignment.end,
+        actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
