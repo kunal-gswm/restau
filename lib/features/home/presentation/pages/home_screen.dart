@@ -14,6 +14,7 @@ import '../../../../shared/widgets/section_header.dart';
 import '../widgets/loyalty_summary_card.dart';
 import '../widgets/order_again_card.dart';
 import '../widgets/category_pill.dart';
+import '../widgets/home_skeleton.dart';
 import '../../../menu/presentation/pages/menu_screen.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
 import '../../../offers/presentation/pages/offers_screen.dart';
@@ -37,11 +38,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final PageController _bannerController = PageController(viewportFraction: 0.93, initialPage: 4000);
   int _currentBannerIndex = 0;
   Timer? _bannerTimer;
+  bool _isLoading = true; // Added loading state
 
   @override
   void initState() {
     super.initState();
     _startBannerAutoPlay();
+    
+    // Simulate network delay to show the premium skeleton loader
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
   }
 
   void _startBannerAutoPlay() {
@@ -79,7 +88,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: cartState.items.isNotEmpty
+      floatingActionButton: cartState.items.isNotEmpty && !_isLoading
           ? CartBar(
               itemCount: cartState.totalItemCount,
               total: cartState.grandTotal,
@@ -139,6 +148,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHomeBody(BuildContext context) {
+    if (_isLoading) {
+      return const HomeSkeleton();
+    }
+
     final user = ref.watch(userProvider);
     final categories = ref.watch(categoriesProvider);
     final favorites = ref.watch(favoriteProductsProvider);
