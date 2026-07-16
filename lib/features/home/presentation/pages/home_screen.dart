@@ -34,7 +34,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentNavIndex = 0;
-  final PageController _bannerController = PageController(viewportFraction: 0.93);
+  final PageController _bannerController = PageController(viewportFraction: 0.93, initialPage: 4000);
   int _currentBannerIndex = 0;
   Timer? _bannerTimer;
 
@@ -47,10 +47,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _startBannerAutoPlay() {
     _bannerTimer?.cancel();
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (!mounted || !_bannerController.hasClients) return;
-      final nextPage = (_currentBannerIndex + 1) % 4;
+      if (!mounted || !_bannerController.hasClients || !_bannerController.position.hasContentDimensions) return;
+      final currentPage = _bannerController.page?.round() ?? _bannerController.initialPage;
       _bannerController.animateToPage(
-        nextPage,
+        currentPage + 1,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
@@ -153,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           elevation: 0,
           backgroundColor: AppColors.background.withValues(alpha: 0.97),
           surfaceTintColor: Colors.transparent,
-          toolbarHeight: 64,
+          toolbarHeight: 54,
           automaticallyImplyLeading: false,
           titleSpacing: AppSpacing.lg,
           title: InkWell(
@@ -197,19 +197,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               // ─── Greeting ──────────────────────────────────────
               Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.md,
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xs,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       AppTranslations.tr(ref.watch(settingsProvider).locale, 'Good evening,'),
-                      style: AppTypography.body1(AppColors.textTertiary),
+                      style: AppTypography.body2(AppColors.textTertiary),
                     ),
                     Text(
                       user.name.split(' ').first,
-                      style: AppTypography.display(AppColors.textPrimary),
+                      style: AppTypography.h2(AppColors.textPrimary),
                     ),
                   ],
                 ),
@@ -349,19 +349,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           height: 280,
           child: PageView.builder(
             controller: _bannerController,
-            itemCount: banners.length,
+            itemCount: 10000,
             onPageChanged: (index) {
               setState(() {
-                _currentBannerIndex = index;
+                _currentBannerIndex = index % banners.length;
               });
             },
             itemBuilder: (context, index) {
-              final product = banners[index];
-              final customBadge = index == 0
+              final actualIndex = index % banners.length;
+              final product = banners[actualIndex];
+              final customBadge = actualIndex == 0
                   ? 'CHEF\'S SPECIAL THALI'
-                  : index == 1
+                  : actualIndex == 1
                       ? 'TRENDING DUM BIRYANI'
-                      : index == 2
+                      : actualIndex == 2
                           ? 'ROYAL CURRY FEAST'
                           : 'SIGNATURE TANDOOR & GRILL';
 
