@@ -338,7 +338,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
-                          'You saved ₹${((cartState.deliveryFee == 0 ? 40 : 0) + cartState.discount).toStringAsFixed(0)} on this order!',
+                          'You saved ₹${((cartState.deliveryFee == 0 ? CartState.standardDeliveryFee : 0) + cartState.discount).toStringAsFixed(0)} on this order!',
                           style: AppTypography.subtitle2(AppColors.success),
                         ),
                       ),
@@ -398,7 +398,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         isFree
             ? Row(
                 children: [
-                  Text('₹40', style: AppTypography.body2(AppColors.textTertiary).copyWith(decoration: TextDecoration.lineThrough)),
+                  Text('₹${CartState.standardDeliveryFee.toStringAsFixed(0)}', style: AppTypography.body2(AppColors.textTertiary).copyWith(decoration: TextDecoration.lineThrough)),
                   const SizedBox(width: 4),
                   Text('FREE', style: AppTypography.subtitle2(AppColors.success)),
                 ],

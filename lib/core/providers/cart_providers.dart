@@ -8,6 +8,8 @@ import '../data/mock_data.dart';
 const Object _sentinel = Object();
 
 class CartState {
+  static const double standardDeliveryFee = 40.0;
+
   final List<CartItem> items;
   final Offer? appliedOffer;
 
@@ -43,7 +45,7 @@ class CartState {
 
   double get subtotal => itemTotal - discount;
   double get taxes => subtotal * 0.05; // 5% tax
-  double get deliveryFee => (itemTotal > 500 || items.isEmpty) ? 0.0 : 40.0;
+  double get deliveryFee => (itemTotal > 500 || items.isEmpty) ? 0.0 : standardDeliveryFee;
   double get grandTotal => subtotal + taxes + deliveryFee;
   
   int get totalItemCount => items.fold(0, (sum, item) => sum + item.quantity);
