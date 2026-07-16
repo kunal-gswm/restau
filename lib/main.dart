@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'core/theme/app_theme.dart';
-import 'features/home/presentation/pages/home_screen.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/theme/app_theme.dart';
 import 'core/providers/settings_provider.dart';
+import 'features/splash/presentation/pages/splash_screen.dart';
+
 void main() {
   runApp(
     const ProviderScope(
@@ -25,7 +26,7 @@ class KhanaApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
       locale: settings.locale,
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }
