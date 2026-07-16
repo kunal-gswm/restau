@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import '../data/mock_data.dart';
 import 'menu_providers.dart';
+import 'shared_prefs_provider.dart';
 
 class UserNotifier extends Notifier<User> {
   @override
@@ -48,16 +49,18 @@ class UserNotifier extends Notifier<User> {
       email: email ?? state.email,
     );
   }
-}
-
+// Provides only the products that are favorited
 final userProvider = NotifierProvider<UserNotifier, User>(() {
   return UserNotifier();
 });
 
 class FavoritesNotifier extends Notifier<List<String>> {
+  static const _favoritesKey = 'app_favorites';
+
   @override
   List<String> build() {
-    return ['p1', 'p3']; // Mock some initial favorites
+    final prefs = ref.read(sharedPrefsProvider);
+    return prefs.getStringList(_favoritesKey) ?? ['p1', 'p3']; // Load from cache, fallback to defaults
   }
 
   void toggleFavorite(String productId) {
@@ -66,6 +69,9 @@ class FavoritesNotifier extends Notifier<List<String>> {
     } else {
       state = [...state, productId];
     }
+    
+    // Save to cache
+    ref.read(sharedPrefsProvider).setStringList(_favoritesKey, state);
   }
 
   bool isFavorite(String productId) {

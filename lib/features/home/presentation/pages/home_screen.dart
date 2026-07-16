@@ -254,7 +254,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       return CategoryPill(
-                        title: 'All', 
+                        title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'All'), 
                         emoji: '✨', 
                         isSelected: ref.watch(selectedCategoryProvider) == 'All',
                         onTap: () {
@@ -289,8 +289,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // ─── Order Again ───────────────────────────────────
               if (favorites.isNotEmpty) ...[
                 SectionHeader(
-                  title: 'Your Favourites',
-                  actionText: 'See all',
+                  title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Your Favourites'),
+                  actionText: AppTranslations.tr(ref.watch(settingsProvider).locale, 'See all'),
                   onAction: () {
                     Navigator.push(context, AppPageRoute(page: const FavoritesScreen()));
                   },
@@ -329,7 +329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
 
               // ─── Today's Special ───────────────────────────────
-              SectionHeader(title: 'Chef\'s Recommendation'),
+              SectionHeader(title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Chef\'s Recommendation')),
               const SizedBox(height: AppSpacing.md),
               _buildTodaysSpecial(context),
 
@@ -472,7 +472,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              'Order Now • ₹${product.price.toInt()}',
+                                              '${AppTranslations.tr(ref.watch(settingsProvider).locale, 'Order Now')} • ₹${product.price.toInt()}',
                                               style: AppTypography.subtitle2(AppColors.textPrimary),
                                             ),
                                             const SizedBox(width: AppSpacing.xs),
@@ -630,7 +630,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Add to Order',
+                        AppTranslations.tr(ref.watch(settingsProvider).locale, 'Add to Order'),
                         style: AppTypography.buttonLarge(AppColors.textOnPrimary),
                       ),
                     ),
@@ -663,7 +663,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Select Delivery Address', style: AppTypography.h2(AppColors.textPrimary)),
+                    Text(AppTranslations.tr(ref.watch(settingsProvider).locale, 'Select Delivery Address'), style: AppTypography.h2(AppColors.textPrimary)),
                     IconButton(
                       icon: const Icon(Icons.close, color: AppColors.textTertiary),
                       onPressed: () => Navigator.pop(context),
@@ -717,7 +717,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Navigator.push(context, AppPageRoute(page: const SavedAddressesScreen()));
                     },
                     icon: const Icon(Icons.add_location_alt_outlined, color: AppColors.primary),
-                    label: const Text('Manage & Add Addresses'),
+                    label: Text(AppTranslations.tr(ref.watch(settingsProvider).locale, 'Manage & Add Addresses')),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),

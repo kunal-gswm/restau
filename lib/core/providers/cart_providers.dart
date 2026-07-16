@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../models/cart_item_model.dart';
 import '../models/product_model.dart';
 import '../models/offer_model.dart';
 import '../data/mock_data.dart';
+import 'shared_prefs_provider.dart';
 
 const Object _sentinel = Object();
 
@@ -52,11 +54,43 @@ class CartState {
 }
 
 class CartNotifier extends Notifier<CartState> {
+  static const _cartKey = 'app_cart_state';
   final _uuid = const Uuid();
 
   @override
   CartState build() {
+    final prefs = ref.read(sharedPrefsProvider);
+    final cartJson = prefs.getString(_cartKey);
+    
+    if (cartJson != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(cartJson);
+        final items = <CartItem>[];
+        for (var map in decoded) {
+          final pId = map['productId'] as String;
+          final qty = map['quantity'] as int;
+          final product = MockData.products.firstWhere((p) => p.id == pId, orElse: () => MockData.products.first);
+          items.add(CartItem(
+            id: _uuid.v4(),
+            product: product,
+            quantity: qty,
+          ));
+        }
+        return CartState(items: items);
+      } catch (e) {
+        return const CartState();
+      }
+    }
     return const CartState();
+  }
+
+  void _saveToCache() {
+    final prefs = ref.read(sharedPrefsProvider);
+    final simplifiedList = state.items.map((i) => {
+      'productId': i.product.id,
+      'quantity': i.quantity,
+    }).toList();
+    prefs.setString(_cartKey, jsonEncode(simplifiedList));
   }
 
   void addItem({
@@ -79,6 +113,7 @@ class CartNotifier extends Notifier<CartState> {
     state = state.copyWith(
       items: [...state.items, newItem],
     );
+    _saveToCache();
   }
 
   void updateQuantity(String itemId, int newQuantity) {
@@ -95,16 +130,19 @@ class CartNotifier extends Notifier<CartState> {
         return item;
       }).toList(),
     );
+    _saveToCache();
   }
 
   void removeItem(String itemId) {
     state = state.copyWith(
       items: state.items.where((item) => item.id != itemId).toList(),
     );
+    _saveToCache();
   }
 
   void clearCart() {
     state = const CartState();
+    _saveToCache();
   }
 
   bool applyCoupon(String code) {

@@ -24,9 +24,12 @@ class CartBar extends StatefulWidget {
   State<CartBar> createState() => _CartBarState();
 }
 
-class _CartBarState extends State<CartBar> with SingleTickerProviderStateMixin {
+class _CartBarState extends State<CartBar> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  
+  late AnimationController _bounceController;
+  late Animation<double> _bounceAnimation;
 
   @override
   void initState() {
@@ -38,11 +41,29 @@ class _CartBarState extends State<CartBar> with SingleTickerProviderStateMixin {
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _bounceAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08).chain(CurveTween(curve: Curves.easeOutCubic)), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0).chain(CurveTween(curve: Curves.bounceOut)), weight: 70),
+    ]).animate(_bounceController);
+  }
+  
+  @override
+  void didUpdateWidget(covariant CartBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.itemCount > oldWidget.itemCount) {
+      _bounceController.forward(from: 0.0);
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _bounceController.dispose();
     super.dispose();
   }
 
@@ -66,10 +87,11 @@ class _CartBarState extends State<CartBar> with SingleTickerProviderStateMixin {
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       child: AnimatedBuilder(
-        animation: _scaleAnimation,
+        animation: Listenable.merge([_scaleAnimation, _bounceAnimation]),
         builder: (context, child) {
+          final combinedScale = _scaleAnimation.value * _bounceAnimation.value;
           return Transform.scale(
-            scale: _scaleAnimation.value,
+            scale: combinedScale,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               child: Container(

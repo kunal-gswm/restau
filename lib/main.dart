@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/providers/settings_provider.dart';
+import 'core/providers/shared_prefs_provider.dart';
 import 'features/splash/presentation/pages/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  final sharedPreferences = await SharedPreferences.getInstance();
+
   runApp(
-    const ProviderScope(
-      child: KhanaApp(),
+    ProviderScope(
+      overrides: [
+        sharedPrefsProvider.overrideWithValue(sharedPreferences),
+      ],
+      child: const KhanaApp(),
     ),
   );
 }
