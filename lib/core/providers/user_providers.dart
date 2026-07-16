@@ -49,6 +49,8 @@ class UserNotifier extends Notifier<User> {
       email: email ?? state.email,
     );
   }
+}
+
 // Provides only the products that are favorited
 final userProvider = NotifierProvider<UserNotifier, User>(() {
   return UserNotifier();
