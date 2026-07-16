@@ -55,8 +55,11 @@ class SettingsGroup extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: children,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: children,
+        ),
       ),
     );
   }
