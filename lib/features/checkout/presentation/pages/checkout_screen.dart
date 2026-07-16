@@ -64,31 +64,47 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
     setState(() {
       _isProcessing = true;
     });
-    
-    // Simulate network delay for payment gateway
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    setState(() {
-      _isProcessing = false;
-      _isSuccess = true;
-    });
-    
-    _successAnimController.forward();
-    
-    // Log the order (simulate backend save)
-    // In a real app we'd dispatch to ordersProvider here, but for demo
-    // we just clear the cart.
-    ref.read(cartProvider.notifier).clearCart();
-    
-    // Navigate away after success animation
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+
+    try {
+      // Simulate network delay for payment gateway
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+        _isSuccess = true;
+      });
+
+      _successAnimController.forward();
+
+      // Log the order (simulate backend save)
+      // In a real app we'd dispatch to ordersProvider here, but for demo
+      // we just clear the cart.
+      ref.read(cartProvider.notifier).clearCart();
+
+      // Navigate away after success animation
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order placed successfully! Tracking started.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order placed successfully! Tracking started.'),
-        )
+        SnackBar(
+          content: Text('Payment failed: ${e.toString()}'),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: _processPayment,
+          ),
+        ),
       );
     }
   }
