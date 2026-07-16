@@ -5,6 +5,8 @@ import '../models/product_model.dart';
 import '../models/offer_model.dart';
 import '../data/mock_data.dart';
 
+const Object _sentinel = Object();
+
 class CartState {
   final List<CartItem> items;
   final Offer? appliedOffer;
@@ -16,11 +18,11 @@ class CartState {
 
   CartState copyWith({
     List<CartItem>? items,
-    Offer? appliedOffer,
+    Object? appliedOffer = _sentinel,
   }) {
     return CartState(
       items: items ?? this.items,
-      appliedOffer: appliedOffer ?? this.appliedOffer,
+      appliedOffer: appliedOffer == _sentinel ? this.appliedOffer : appliedOffer as Offer?,
     );
   }
 
@@ -117,9 +119,7 @@ class CartNotifier extends Notifier<CartState> {
   }
   
   void removeCoupon() {
-    // We cannot pass null to copyWith if it uses `??` logic to ignore nulls, 
-    // so we recreate the state
-    state = CartState(items: state.items, appliedOffer: null);
+    state = state.copyWith(appliedOffer: null);
   }
 }
 
