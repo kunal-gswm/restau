@@ -4,6 +4,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/user_providers.dart';
+import '../../../../core/providers/cart_providers.dart';
 import '../../../home/presentation/widgets/order_again_card.dart';
 
 class FavoritesScreen extends ConsumerWidget {
@@ -24,7 +25,7 @@ class FavoritesScreen extends ConsumerWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: AppSpacing.md,
                 crossAxisSpacing: AppSpacing.md,
-                childAspectRatio: 0.75,
+                childAspectRatio: 0.72,
               ),
               itemCount: favorites.length,
               itemBuilder: (context, index) {
@@ -34,7 +35,12 @@ class FavoritesScreen extends ConsumerWidget {
                   contextText: product.category,
                   price: '₹${product.price.toInt()}',
                   imageUrl: product.imageUrl,
-                  onReorder: () {},
+                  onReorder: () {
+                    ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${product.title} added to cart'), duration: const Duration(seconds: 2)),
+                    );
+                  },
                 );
               },
             ),

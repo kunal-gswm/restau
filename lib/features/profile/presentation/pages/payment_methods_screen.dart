@@ -38,7 +38,9 @@ class PaymentMethodsScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add payment method coming soon'), duration: Duration(seconds: 2)),
+        ),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: AppColors.textOnPrimary),
       ),

@@ -87,7 +87,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Account settings coming soon'), duration: Duration(seconds: 2)),
+            ),
           ),
         ],
       ),
@@ -198,7 +200,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                 SectionHeader(
                   title: 'Khana Rewards',
                   actionText: 'View All',
-                  onAction: () {},
+                  onAction: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('All rewards coming soon'), duration: Duration(seconds: 2)),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
@@ -236,21 +240,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                     items: 'Butter Chicken Thali + 2 more',
                     price: 750.0,
                     status: 'Delivered',
-                    onReorder: () {},
-                    onRate: () {},
+                    onReorder: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reorder coming soon'), duration: Duration(seconds: 2)),
+                    ),
+                    onRate: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Order rating coming soon'), duration: Duration(seconds: 2)),
+                    ),
                   ),
                   OrderCard(
                     date: '12 Jul, 7:30 PM',
                     items: 'Chicken Biryani (Large)',
                     price: 540.0,
                     status: 'Delivered',
-                    onReorder: () {},
-                    onRate: () {},
+                    onReorder: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reorder coming soon'), duration: Duration(seconds: 2)),
+                    ),
+                    onRate: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Order rating coming soon'), duration: Duration(seconds: 2)),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Center(
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Full order history coming soon'), duration: Duration(seconds: 2)),
+                      ),
                       child: const Text('View All Orders'),
                     ),
                   ),

@@ -32,13 +32,20 @@ class SavedAddressesScreen extends ConsumerWidget {
               leading: Icon(address.isDefault ? Icons.star : Icons.location_on, color: AppColors.primary),
               title: Text(address.title, style: AppTypography.subtitle2(AppColors.textPrimary)),
               subtitle: Text(address.fullAddress, style: AppTypography.body2(AppColors.textSecondary)),
-              trailing: IconButton(icon: const Icon(Icons.edit, color: AppColors.textTertiary), onPressed: () {}),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit, color: AppColors.textTertiary),
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Address editing coming soon'), duration: Duration(seconds: 2)),
+                ),
+              ),
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add new address coming soon'), duration: Duration(seconds: 2)),
+        ),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: AppColors.textOnPrimary),
       ),

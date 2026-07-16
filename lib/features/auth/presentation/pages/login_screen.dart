@@ -103,7 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: AppSpacing.md),
               TextButton(
-                onPressed: () {},
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Password recovery coming soon'), duration: Duration(seconds: 2)),
+                ),
                 child: Text('Forgot Password?', style: AppTypography.buttonRegular(AppColors.primary)),
               ),
               const Spacer(flex: 2),
