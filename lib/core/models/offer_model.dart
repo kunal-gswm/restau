@@ -22,16 +22,3 @@ class Offer {
   });
 }
 
-class Reward {
-  final String id;
-  final String title;
-  final int pointsCost;
-  final String iconType; // e.g. 'drink', 'food'
-
-  const Reward({
-    required this.id,
-    required this.title,
-    required this.pointsCost,
-    this.iconType = 'food',
-  });
-}
