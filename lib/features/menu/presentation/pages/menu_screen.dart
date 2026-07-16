@@ -21,77 +21,22 @@ class MenuScreen extends ConsumerStatefulWidget {
   ConsumerState<MenuScreen> createState() => _MenuScreenState();
 }
 
+
+
 class _MenuScreenState extends ConsumerState<MenuScreen> {
   final ScrollController _scrollController = ScrollController();
-  final Map<String, GlobalKey> _categoryKeys = {};
-  bool _isManualScrolling = false; // Flag to prevent scrollspy from overriding manual tab clicks
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_isManualScrolling) return;
-
-    // Simple scroll spy logic
-    String? visibleCategory;
-    for (var entry in _categoryKeys.entries) {
-      final key = entry.value;
-      if (key.currentContext != null) {
-        final renderObject = key.currentContext!.findRenderObject() as RenderBox;
-        final position = renderObject.localToGlobal(Offset.zero).dy;
-        // If the section is near the top of the screen (adjusting for app bar + sticky header)
-        if (position > 0 && position < 350) {
-          visibleCategory = entry.key;
-          break;
-        }
-      }
-    }
-
-    if (visibleCategory != null) {
-      final currentCategory = ref.read(selectedCategoryProvider);
-      if (currentCategory != visibleCategory && currentCategory != 'All') {
-        // We defer state update to avoid setState during build or scroll notification
-        Future.microtask(() {
-          ref.read(selectedCategoryProvider.notifier).setCategory(visibleCategory!);
-        });
-      }
-    }
-  }
-
-  void _scrollToCategory(String category) {
-    if (category == 'All') return;
-    final key = _categoryKeys[category];
-    if (key != null && key.currentContext != null) {
-      _isManualScrolling = true;
-      ref.read(selectedCategoryProvider.notifier).setCategory(category);
-      Scrollable.ensureVisible(
-        key.currentContext!,
-        duration: AppDurations.normal,
-        curve: Curves.easeInOut,
-        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
-      ).then((_) => _isManualScrolling = false);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final groupedProducts = ref.watch(menuByCategoryProvider);
     final categories = ref.watch(categoriesProvider);
-    
-    // Ensure keys exist for all categories
-    for (var category in categories) {
-      _categoryKeys.putIfAbsent(category, () => GlobalKey());
-    }
+    final selectedCategory = ref.watch(selectedCategoryProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -99,9 +44,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         controller: _scrollController,
         slivers: [
           _buildSliverAppBar(),
+          _buildDietarySegmentedControl(),
           _buildStickyCategoryBar(categories),
-          for (var category in groupedProducts.keys)
-            _buildMenuSection(category, groupedProducts[category]!),
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var category in groupedProducts.keys)
+                  if (selectedCategory == 'All' || selectedCategory == category)
+                    _buildMenuSection(category, groupedProducts[category]!),
+              ],
+            ),
+          ),
 
           // Bottom padding for cart FAB (managed by HomeScreen)
           const SliverToBoxAdapter(
@@ -227,6 +181,58 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     );
   }
 
+  Widget _buildDietarySegmentedControl() {
+    final dietaryFilter = ref.watch(dietaryFilterProvider);
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding, vertical: AppSpacing.md),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceMuted,
+            borderRadius: AppRadii.borderRadiusLg,
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: [
+              _buildSegment(DietaryFilter.all, 'All', dietaryFilter, Icons.restaurant_menu, AppColors.textPrimary),
+              _buildSegment(DietaryFilter.veg, 'Veg', dietaryFilter, Icons.circle, AppColors.vegetarian),
+              _buildSegment(DietaryFilter.nonVeg, 'Non-Veg', dietaryFilter, Icons.circle, AppColors.nonVegetarian),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegment(DietaryFilter filter, String label, DietaryFilter currentFilter, IconData icon, Color activeColor) {
+    final isSelected = filter == currentFilter;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => ref.read(dietaryFilterProvider.notifier).setFilter(filter),
+        child: AnimatedContainer(
+          duration: AppDurations.fast,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.surface : Colors.transparent,
+            borderRadius: AppRadii.borderRadiusMd,
+            boxShadow: isSelected ? AppElevation.low : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: isSelected ? activeColor : AppColors.textTertiary),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppTypography.subtitle2(isSelected ? AppColors.textPrimary : AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStickyCategoryBar(List<String> categories) {
     final selectedCategory = ref.watch(selectedCategoryProvider);
     
@@ -253,11 +259,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                   child: InkWell(
                     borderRadius: AppRadii.borderRadiusPill,
                     onTap: () {
-                      if (cat == 'All') {
-                        ref.read(selectedCategoryProvider.notifier).setCategory('All');
-                        _scrollController.animateTo(0, duration: AppDurations.normal, curve: Curves.easeInOut);
-                      } else {
-                        _scrollToCategory(cat);
+                      ref.read(selectedCategoryProvider.notifier).setCategory(cat);
+                      // Scroll to top of the menu list (just below the sticky header)
+                      if (_scrollController.hasClients && _scrollController.offset > 280) {
+                        _scrollController.animateTo(280.0, duration: AppDurations.normal, curve: Curves.easeInOut);
                       }
                     },
                     child: AnimatedContainer(
@@ -293,8 +298,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   }
 
   Widget _buildMenuSection(String category, List<Product> products) {
-    return SliverToBoxAdapter(
-      key: _categoryKeys[category],
+    return Container(
+      key: ValueKey(category),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

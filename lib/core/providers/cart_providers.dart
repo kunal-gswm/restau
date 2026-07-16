@@ -99,8 +99,17 @@ class CartNotifier extends Notifier<CartState> {
     List<SelectedModifier> selectedModifiers = const [],
     String specialInstructions = '',
   }) {
-    // Basic logic to check if identical item exists (same product and modifiers) could go here
-    // For simplicity, we just add a new row
+    // Check if identical item exists
+    final existingIdx = state.items.indexWhere((i) => 
+      i.product.id == product.id && 
+      i.selectedModifiers.length == selectedModifiers.length && 
+      i.specialInstructions == specialInstructions
+    );
+
+    if (existingIdx != -1) {
+      updateQuantity(state.items[existingIdx].id, state.items[existingIdx].quantity + quantity);
+      return;
+    }
     
     final newItem = CartItem(
       id: _uuid.v4(),
@@ -131,6 +140,18 @@ class CartNotifier extends Notifier<CartState> {
       }).toList(),
     );
     _saveToCache();
+  }
+
+  void decrementProduct(String productId) {
+    final idx = state.items.indexWhere((i) => i.product.id == productId);
+    if (idx != -1) {
+      final item = state.items[idx];
+      if (item.quantity > 1) {
+        updateQuantity(item.id, item.quantity - 1);
+      } else {
+        removeItem(item.id);
+      }
+    }
   }
 
   void removeItem(String itemId) {

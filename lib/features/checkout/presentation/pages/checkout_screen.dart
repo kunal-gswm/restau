@@ -19,7 +19,6 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTickerProviderStateMixin {
-  bool _isContactless = true;
   double _tipAmount = 0.0;
   String _selectedPayment = '';
   
@@ -194,15 +193,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
                                   contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                                 ),
                               ),
-                              const SizedBox(height: AppSpacing.sm),
-                              SwitchListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text('Contactless Delivery', style: AppTypography.subtitle2(AppColors.textPrimary)),
-                                subtitle: Text('Driver will leave the package at your door', style: AppTypography.caption(AppColors.textSecondary)),
-                                value: _isContactless,
-                                activeThumbColor: AppColors.primary,
-                                onChanged: (val) => setState(() => _isContactless = val),
-                              ),
+
                             ],
                           ),
                         ),

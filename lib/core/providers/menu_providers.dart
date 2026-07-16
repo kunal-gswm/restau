@@ -20,14 +20,44 @@ final recommendedProductsProvider = Provider<List<Product>>((ref) {
   return MockData.products.where((p) => p.isBestseller).toList();
 });
 
+enum DietaryFilter { all, veg, nonVeg }
+
+class DietaryFilterNotifier extends Notifier<DietaryFilter> {
+  @override
+  DietaryFilter build() => DietaryFilter.all;
+
+  void toggle() {
+    if (state == DietaryFilter.all) {
+      state = DietaryFilter.veg;
+    } else if (state == DietaryFilter.veg) {
+      state = DietaryFilter.nonVeg;
+    } else {
+      state = DietaryFilter.all;
+    }
+  }
+
+  void setFilter(DietaryFilter filter) {
+    state = filter;
+  }
+}
+
+final dietaryFilterProvider = NotifierProvider<DietaryFilterNotifier, DietaryFilter>(() => DietaryFilterNotifier());
+
 // Provides products grouped by category
 final menuByCategoryProvider = Provider<Map<String, List<Product>>>((ref) {
   final products = ref.watch(productsProvider);
   final categories = ref.watch(categoriesProvider);
+  final dietaryFilter = ref.watch(dietaryFilterProvider);
   
   Map<String, List<Product>> grouped = {};
   for (var category in categories) {
-    grouped[category] = products.where((p) => p.category == category).toList();
+    var categoryProducts = products.where((p) => p.category == category).toList();
+    if (dietaryFilter == DietaryFilter.veg) {
+      categoryProducts = categoryProducts.where((p) => p.isVeg).toList();
+    } else if (dietaryFilter == DietaryFilter.nonVeg) {
+      categoryProducts = categoryProducts.where((p) => !p.isVeg).toList();
+    }
+    grouped[category] = categoryProducts;
   }
   // Remove empty categories
   grouped.removeWhere((key, value) => value.isEmpty);
@@ -39,7 +69,7 @@ final menuByCategoryProvider = Provider<Map<String, List<Product>>>((ref) {
 class SelectedCategoryNotifier extends Notifier<String> {
   @override
   String build() {
-    return MockData.categories.first;
+    return 'All';
   }
 
   void setCategory(String category) {

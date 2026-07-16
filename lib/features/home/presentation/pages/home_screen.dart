@@ -13,7 +13,6 @@ import '../../../../shared/widgets/cart_bar.dart';
 import '../../../../shared/widgets/section_header.dart';
 import '../widgets/loyalty_summary_card.dart';
 import '../widgets/order_again_card.dart';
-import '../widgets/category_pill.dart';
 import '../widgets/home_skeleton.dart';
 import '../../../menu/presentation/pages/menu_screen.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
@@ -153,7 +152,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     final user = ref.watch(userProvider);
-    final categories = ref.watch(categoriesProvider);
     final favorites = ref.watch(favoriteProductsProvider);
     final cartState = ref.watch(cartProvider);
 
@@ -208,26 +206,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─── Greeting ──────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xs,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppTranslations.tr(ref.watch(settingsProvider).locale, 'Good evening,'),
-                      style: AppTypography.body2(AppColors.textTertiary),
-                    ),
-                    Text(
-                      user.name.split(' ').first,
-                      style: AppTypography.h2(AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-
               // ─── Hero Banner ───────────────────────────────────
               _buildHeroBanner(context),
 
@@ -243,48 +221,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               const SizedBox(height: AppSpacing.lg),
 
-              // ─── Categories ────────────────────────────────────
-              SizedBox(
-                height: 52,
-                child: ListView.separated(
-                  padding: AppSpacing.screenH,
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categories.length + 1,
-                  separatorBuilder: (c, i) => const SizedBox(width: AppSpacing.sm),
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return CategoryPill(
-                        title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'All'), 
-                        emoji: '✨', 
-                        isSelected: ref.watch(selectedCategoryProvider) == 'All',
-                        onTap: () {
-                          ref.read(selectedCategoryProvider.notifier).setCategory('All');
-                          setState(() => _currentNavIndex = 1);
-                        },
-                      );
-                    }
-                    final category = categories[index - 1];
-                    // Map emoji
-                    String emoji = '🍛';
-                    if (category == 'Biryani') emoji = '🍚';
-                    if (category == 'Tandoor') emoji = '🔥';
-                    if (category == 'Beverages') emoji = '🥤';
-                    if (category == 'Desserts') emoji = '🍰';
-                    
-                    return CategoryPill(
-                      title: category,
-                      emoji: emoji,
-                      isSelected: ref.watch(selectedCategoryProvider) == category,
-                      onTap: () {
-                        ref.read(selectedCategoryProvider.notifier).setCategory(category);
-                        setState(() => _currentNavIndex = 1);
-                      },
-                    );
-                  },
-                ),
-              ),
 
-              const SizedBox(height: AppSpacing.lg),
 
               // ─── Order Again ───────────────────────────────────
               if (favorites.isNotEmpty) ...[
@@ -319,7 +256,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
                         },
                         onDecrement: () {
-                          ref.read(cartProvider.notifier).removeItem(product.id);
+                          ref.read(cartProvider.notifier).decrementProduct(product.id);
                         },
                       );
                     },
@@ -371,13 +308,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             itemBuilder: (context, index) {
               final actualIndex = index % banners.length;
               final product = banners[actualIndex];
-              final customBadge = actualIndex == 0
-                  ? 'CHEF\'S SPECIAL THALI'
-                  : actualIndex == 1
-                      ? 'TRENDING DUM BIRYANI'
-                      : actualIndex == 2
-                          ? 'ROYAL CURRY FEAST'
-                          : 'SIGNATURE TANDOOR & GRILL';
 
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
@@ -421,28 +351,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.xs,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: AppRadii.borderRadiusPill,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.local_fire_department, size: 14, color: AppColors.textOnPrimary),
-                                    const SizedBox(width: AppSpacing.xs),
-                                    Text(
-                                      customBadge,
-                                      style: AppTypography.badge(AppColors.textOnPrimary),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
+
                               Text(
                                 product.title,
                                 maxLines: 2,

@@ -50,7 +50,7 @@ class LoyaltySummaryCard extends StatelessWidget {
                         borderRadius: AppRadii.borderRadiusMd,
                       ),
                       child: const Icon(
-                        Icons.star_rounded,
+                        Icons.account_balance_wallet_rounded,
                         color: AppColors.accentGold,
                         size: AppSizes.iconMd,
                       ),
@@ -61,11 +61,11 @@ class LoyaltySummaryCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Khana Rewards',
+                            'Khana Cash',
                             style: AppTypography.overline(AppColors.primary),
                           ),
                           Text(
-                            '$points Points',
+                            'Available Balance: ₹$points',
                             style: AppTypography.subtitle1(AppColors.textPrimary),
                           ),
                         ],
@@ -77,30 +77,6 @@ class LoyaltySummaryCard extends StatelessWidget {
                       size: AppSizes.iconSm,
                     ),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Progress info
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '75% to your Free Signature Burger',
-                      style: AppTypography.subtitle2(AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-
-                // Progress bar
-                ClipRRect(
-                  borderRadius: AppRadii.borderRadiusPill,
-                  child: LinearProgressIndicator(
-                    value: 0.75,
-                    backgroundColor: AppColors.surface,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    minHeight: 8,
-                  ),
                 ),
               ],
             ),

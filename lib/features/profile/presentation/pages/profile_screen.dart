@@ -8,10 +8,8 @@ import '../../../../core/providers/user_providers.dart';
 import '../../../../core/providers/cart_providers.dart';
 import '../../../../core/providers/menu_providers.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/utils/app_translations.dart';
-import '../../../../shared/widgets/section_header.dart';
-import '../../../../shared/widgets/stat_card.dart';
-import '../../../../shared/widgets/reward_card.dart';
 import '../../../../shared/widgets/order_card.dart';
 import '../../../../shared/widgets/settings_tile.dart';
 import '../../../auth/presentation/pages/login_screen.dart';
@@ -36,9 +34,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   late Animation<double> _cardFlipAnimation;
   bool _isCardFlipped = false;
 
-  late AnimationController _progressController;
-  late Animation<double> _progressAnimation;
-
   @override
   void initState() {
     super.initState();
@@ -50,24 +45,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
       CurvedAnimation(parent: _cardFlipController, curve: Curves.easeInOut),
     );
 
-    _progressController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _progressAnimation = Tween<double>(begin: 0, end: 0.75).animate(
-      CurvedAnimation(parent: _progressController, curve: Curves.easeOutCubic),
-    );
 
-    // Start progress animation
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) _progressController.forward();
-    });
   }
 
   @override
   void dispose() {
     _cardFlipController.dispose();
-    _progressController.dispose();
     super.dispose();
   }
 
@@ -83,6 +66,58 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
+    final isGuest = ref.watch(authControllerProvider);
+    final authUser = ref.watch(authUserProvider);
+    
+    final displayEmail = authUser?.email ?? user.email;
+    // For prototype, derive a display name from email if authUser exists, otherwise use mock name
+    final displayName = authUser != null && authUser.email != null 
+        ? authUser.email!.split('@').first 
+        : user.name;
+    
+    if (isGuest) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('My Account')),
+        body: Center(
+          child: Padding(
+            padding: AppSpacing.screenAll,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.account_circle_outlined, size: 100, color: AppColors.textTertiary),
+                const SizedBox(height: AppSpacing.lg),
+                Text('You are browsing as a Guest', style: AppTypography.h2(AppColors.textPrimary)),
+                const SizedBox(height: AppSpacing.md),
+                Text('Sign in or create an account to view your past orders, manage addresses, and earn Khana Cash!', 
+                  textAlign: TextAlign.center, 
+                  style: AppTypography.body1(AppColors.textSecondary)
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                SizedBox(
+                  width: double.infinity,
+                  height: AppSizes.buttonHeightLg,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textOnPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusLg),
+                    ),
+                    child: Text('Sign In / Sign Up', style: AppTypography.buttonLarge(AppColors.textOnPrimary)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -115,7 +150,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                         ..setEntry(3, 2, 0.001)
                         ..rotateY(angle),
                       alignment: Alignment.center,
-                      child: isFront ? _buildCardFront(user.name, user.loyaltyTier) : Transform(
+                      child: isFront ? _buildCardFront(displayName, user.loyaltyTier) : Transform(
                         alignment: Alignment.center,
                         transform: Matrix4.identity()..rotateY(math.pi),
                         child: _buildCardBack(),
@@ -127,119 +162,54 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
             ),
           ),
 
-          // 2. Quick Stats
+          // 2. Quick Stats Unified
           SliverToBoxAdapter(
             child: Padding(
               padding: AppSpacing.screenH,
-              child: Row(
-                children: [
-                  const Expanded(child: StatCard(label: 'Orders', value: '24')),
-                  const SizedBox(width: AppSpacing.md),
-                  const Expanded(child: StatCard(label: 'Saved', value: '₹1,240')),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(child: StatCard(label: 'Points', value: user.loyaltyPoints.toString(), isHighlighted: true)),
-                ],
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sectionGap)),
-
-          // 3. Loyalty Progress Ring
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: AppSpacing.screenH,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Loyalty Tier', style: AppTypography.subtitle1(AppColors.textPrimary)),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 200,
-                          height: 200,
-                          child: AnimatedBuilder(
-                            animation: _progressAnimation,
-                            builder: (context, child) {
-                              return CircularProgressIndicator(
-                                value: _progressAnimation.value,
-                                strokeWidth: 12,
-                                backgroundColor: AppColors.surfaceMuted,
-                                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentGold),
-                                strokeCap: StrokeCap.round,
-                              );
-                            },
-                          ),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: AppRadii.borderRadiusXxl,
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: AppElevation.low,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
                           children: [
-                            const Icon(Icons.stars, color: AppColors.accentGold, size: AppSizes.iconXl),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(user.loyaltyTier, style: AppTypography.h1(AppColors.accentGold)),
-                            const SizedBox(height: 4),
-                            Text('${2000 - user.loyaltyPoints} to Pit Boss', style: AppTypography.subtitle2(AppColors.textSecondary)),
+                            Text('Orders', style: AppTypography.caption(AppColors.textSecondary).copyWith(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text('24', style: AppTypography.h1(AppColors.textPrimary)),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sectionGap)),
-
-          // 4. Rewards Grid
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SectionHeader(
-                  title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Khana Rewards'),
-                  actionText: AppTranslations.tr(ref.watch(settingsProvider).locale, 'View All'),
-                  onAction: () => _showRewardsBottomSheet(context),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  height: 140,
-                  child: ListView(
-                    padding: AppSpacing.screenH,
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      RewardCard(
-                        title: 'Mango Lassi',
-                        cost: '400 pts',
-                        isUnlocked: user.loyaltyPoints >= 400,
-                        icon: Icons.local_drink,
-                        onTap: () => _handleRewardTap('Mango Lassi', 400, user.loyaltyPoints >= 400),
                       ),
-                      RewardCard(
-                        title: 'Paneer Tikka',
-                        cost: '800 pts',
-                        isUnlocked: user.loyaltyPoints >= 800,
-                        onTap: () => _handleRewardTap('Paneer Tikka', 800, user.loyaltyPoints >= 800),
+                      Container(height: 40, width: 1, color: AppColors.border),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text('Saved', style: AppTypography.caption(AppColors.textSecondary).copyWith(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text('₹1,240', style: AppTypography.h1(AppColors.textPrimary)),
+                          ],
+                        ),
                       ),
-                      RewardCard(
-                        title: 'Signature Thali',
-                        cost: '1500 pts',
-                        isUnlocked: user.loyaltyPoints >= 1500,
-                        onTap: () => _handleRewardTap('Signature Thali', 1500, user.loyaltyPoints >= 1500),
-                      ),
-                      RewardCard(
-                        title: 'Family Feast',
-                        cost: '2500 pts',
-                        isUnlocked: user.loyaltyPoints >= 2500,
-                        onTap: () => _handleRewardTap('Family Feast', 2500, user.loyaltyPoints >= 2500),
+                      Container(height: 40, width: 1, color: AppColors.border),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text('Points', style: AppTypography.caption(AppColors.primary).copyWith(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(user.loyaltyPoints.toString(), style: AppTypography.h1(AppColors.primary)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
 
@@ -349,8 +319,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                               ),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: AppColors.textOnPrimary, elevation: 0),
-                                onPressed: () {
+                                onPressed: () async {
                                   Navigator.pop(context); // Close dialog
+                                  
+                                  // Clear Supabase session and guest mode
+                                  await ref.read(supabaseClientProvider).auth.signOut();
+                                  await ref.read(authControllerProvider.notifier).setGuestMode(false);
+                                  
+                                  if (!context.mounted) return;
                                   Navigator.of(context, rootNavigator: true).pushReplacement(
                                     MaterialPageRoute(builder: (context) => const LoginScreen()),
                                   );
@@ -470,48 +446,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     );
   }
 
-  void _handleRewardTap(String rewardName, int cost, bool isUnlocked) {
-    if (!isUnlocked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You need $cost points to unlock $rewardName')),
-      );
-      return;
-    }
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Redeem $rewardName?'),
-        content: Text('This will use $cost points from your balance.'),
-        actionsAlignment: MainAxisAlignment.end,
-        actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: AppTypography.buttonRegular(AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$rewardName redeemed! Show code KHANA-$cost at checkout.'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
-            child: const Text('Redeem'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showAccountSettingsModal(BuildContext context) {
     final user = ref.read(userProvider);
-    final nameCtrl = TextEditingController(text: user.name);
+    final authUser = ref.read(authUserProvider);
+    final displayEmail = authUser?.email ?? user.email;
+    final displayName = authUser != null && authUser.email != null ? authUser.email!.split('@').first : user.name;
+
+    final nameCtrl = TextEditingController(text: displayName);
     final phoneCtrl = TextEditingController(text: user.phone);
-    final emailCtrl = TextEditingController(text: user.email);
+    final emailCtrl = TextEditingController(text: displayEmail);
 
     showModalBottomSheet(
       context: context,
@@ -557,63 +501,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     );
   }
 
-  void _showRewardsBottomSheet(BuildContext context) {
-    final user = ref.read(userProvider);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Available Rewards catalog', style: AppTypography.h2(AppColors.textPrimary)),
-            const SizedBox(height: AppSpacing.sm),
-            Text('You have ${user.loyaltyPoints} points', style: AppTypography.subtitle2(AppColors.primary)),
-            const SizedBox(height: AppSpacing.lg),
-            ListTile(
-              leading: const Icon(Icons.local_drink, color: AppColors.primary),
-              title: const Text('Mango Lassi'),
-              subtitle: const Text('400 pts'),
-              trailing: ElevatedButton(
-                onPressed: user.loyaltyPoints >= 400 ? () => _handleRewardTap('Mango Lassi', 400, true) : null,
-                child: const Text('Redeem'),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.fastfood, color: AppColors.primary),
-              title: const Text('Paneer Tikka'),
-              subtitle: const Text('800 pts'),
-              trailing: ElevatedButton(
-                onPressed: user.loyaltyPoints >= 800 ? () => _handleRewardTap('Paneer Tikka', 800, true) : null,
-                child: const Text('Redeem'),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.restaurant, color: AppColors.primary),
-              title: const Text('Signature Thali'),
-              subtitle: const Text('1500 pts'),
-              trailing: ElevatedButton(
-                onPressed: user.loyaltyPoints >= 1500 ? () => _handleRewardTap('Signature Thali', 1500, true) : null,
-                child: const Text('Redeem'),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.family_restroom, color: AppColors.primary),
-              title: const Text('Family Feast'),
-              subtitle: const Text('2500 pts'),
-              trailing: ElevatedButton(
-                onPressed: user.loyaltyPoints >= 2500 ? () => _handleRewardTap('Family Feast', 2500, true) : null,
-                child: const Text('Redeem'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showAllOrdersBottomSheet(BuildContext context) {
     showModalBottomSheet(

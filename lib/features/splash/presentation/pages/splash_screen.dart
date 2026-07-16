@@ -7,7 +7,9 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/widgets/app_logo.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../home/presentation/pages/home_screen.dart';
+import '../../../auth/presentation/pages/login_screen.dart';
 
 /// Khana Splash Screen — Premium Cinematic Reveal
 ///
@@ -67,10 +69,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     // Transition to Home Screen gracefully after the sequence settles (4.5 seconds total)
     Timer(const Duration(milliseconds: 4500), () {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          AppPageRoute(page: const HomeScreen()),
-        );
+        final user = ref.read(supabaseClientProvider).auth.currentUser;
+        final isGuest = ref.read(authControllerProvider);
+
+        if (user != null || isGuest) {
+          Navigator.pushReplacement(
+            context,
+            AppPageRoute(page: const HomeScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            AppPageRoute(page: const LoginScreen()),
+          );
+        }
       }
     });
   }
