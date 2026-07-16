@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -7,6 +8,7 @@ import '../../../../core/theme/app_animations.dart';
 import '../../../../core/providers/cart_providers.dart';
 import '../../../../core/providers/menu_providers.dart';
 import '../../../../core/providers/user_providers.dart';
+import '../../../../core/models/product_model.dart';
 import '../../../../shared/widgets/cart_bar.dart';
 import '../../../../shared/widgets/section_header.dart';
 import '../widgets/loyalty_summary_card.dart';
@@ -32,6 +34,35 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentNavIndex = 0;
+  final PageController _bannerController = PageController(viewportFraction: 0.93);
+  int _currentBannerIndex = 0;
+  Timer? _bannerTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startBannerAutoPlay();
+  }
+
+  void _startBannerAutoPlay() {
+    _bannerTimer?.cancel();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!mounted || !_bannerController.hasClients) return;
+      final nextPage = (_currentBannerIndex + 1) % 4;
+      _bannerController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _bannerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -299,123 +330,178 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeroBanner(BuildContext context) {
-    // Dynamic Hero from recommended products
-    final recommendations = ref.watch(recommendedProductsProvider);
-    if (recommendations.isEmpty) return const SizedBox.shrink();
+    final allRecommendations = ref.watch(recommendedProductsProvider);
+    if (allRecommendations.isEmpty) return const SizedBox.shrink();
     
-    final heroProduct = recommendations.last; // using the last bestseller for hero
+    final bestsellers = allRecommendations.where((p) => p.isBestseller).toList();
+    final banners = <Product>[];
+    if (bestsellers.isNotEmpty) {
+      banners.add(bestsellers[0]); // e.g. Royal Butter Chicken Thali
+      if (bestsellers.length > 3) banners.add(bestsellers[3]); // e.g. Chicken Dum Biryani
+      if (bestsellers.length > 6) banners.add(bestsellers[6]); // e.g. Paneer Butter Masala
+      if (bestsellers.length > 9) banners.add(bestsellers[9]); // e.g. Afghani Tikka or Nawabi Combo
+    }
+    if (banners.isEmpty) banners.addAll(allRecommendations.take(4));
 
-    return Container(
-      margin: AppSpacing.screenH,
-      height: 280,
-      decoration: BoxDecoration(
-        borderRadius: AppRadii.borderRadiusXxl,
-        boxShadow: AppElevation.high,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppRadii.borderRadiusXxl,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () {
-            Navigator.push(context, AppDialogRoute(page: ProductDetailsScreen(product: heroProduct)));
-          },
-          child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              heroProduct.imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(color: AppColors.surfaceMuted),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.black.withValues(alpha: 0.75),
-                  ],
-                  stops: const [0.0, 0.4, 1.0],
+    return Column(
+      children: [
+        SizedBox(
+          height: 280,
+          child: PageView.builder(
+            controller: _bannerController,
+            itemCount: banners.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentBannerIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final product = banners[index];
+              final customBadge = index == 0
+                  ? 'CHEF\'S SPECIAL THALI'
+                  : index == 1
+                      ? 'TRENDING DUM BIRYANI'
+                      : index == 2
+                          ? 'ROYAL CURRY FEAST'
+                          : 'SIGNATURE TANDOOR & GRILL';
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                decoration: BoxDecoration(
+                  borderRadius: AppRadii.borderRadiusXxl,
+                  boxShadow: AppElevation.high,
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.xxl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: AppRadii.borderRadiusPill,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: AppRadii.borderRadiusXxl,
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(context, AppDialogRoute(page: ProductDetailsScreen(product: product)));
+                    },
+                    child: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        const Icon(Icons.restaurant, size: 12, color: AppColors.textOnPrimary),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'FROM OUR KITCHEN',
-                          style: AppTypography.badge(AppColors.textOnPrimary),
+                        Image.network(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => Container(color: AppColors.surfaceMuted),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.3),
+                                Colors.black.withValues(alpha: 0.8),
+                              ],
+                              stops: const [0.0, 0.45, 1.0],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.xs,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: AppRadii.borderRadiusPill,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.local_fire_department, size: 14, color: AppColors.textOnPrimary),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Text(
+                                      customBadge,
+                                      style: AppTypography.badge(AppColors.textOnPrimary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(
+                                product.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.h1(AppColors.textInverse).copyWith(
+                                  fontSize: 26,
+                                  height: 1.15,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Row(
+                                children: [
+                                  Material(
+                                    color: AppColors.surface,
+                                    borderRadius: AppRadii.borderRadiusPill,
+                                    child: InkWell(
+                                      onTap: () {
+                                        ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
+                                      },
+                                      borderRadius: AppRadii.borderRadiusPill,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.lg,
+                                          vertical: AppSpacing.sm,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'Order Now • ₹${product.price.toInt()}',
+                                              style: AppTypography.subtitle2(AppColors.textPrimary),
+                                            ),
+                                            const SizedBox(width: AppSpacing.xs),
+                                            const Icon(Icons.arrow_forward, size: AppSizes.iconSm, color: AppColors.primary),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    heroProduct.title.replaceAll(' ', '\n'), // Simple wrap logic
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.h1(AppColors.textInverse).copyWith(
-                      fontSize: 28,
-                      height: 1.15,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Material(
-                    color: AppColors.surface,
-                    borderRadius: AppRadii.borderRadiusPill,
-                    child: InkWell(
-                      onTap: () {
-                        ref.read(cartProvider.notifier).addItem(product: heroProduct, quantity: 1);
-                      },
-                      borderRadius: AppRadii.borderRadiusPill,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xl,
-                          vertical: AppSpacing.md,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Order Now  •  ₹${heroProduct.price.toInt()}',
-                              style: AppTypography.subtitle2(AppColors.textPrimary),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            const Icon(Icons.arrow_forward, size: AppSizes.iconSm, color: AppColors.primary),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    ),
-  );
-}
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(banners.length, (index) {
+            final isSelected = _currentBannerIndex == index;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: isSelected ? 24 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : AppColors.border,
+                borderRadius: AppRadii.borderRadiusPill,
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
 
   Widget _buildTodaysSpecial(BuildContext context) {
     final recommendations = ref.watch(recommendedProductsProvider);
