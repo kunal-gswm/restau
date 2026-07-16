@@ -35,10 +35,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 3500), // Slowed down for a luxurious reveal
     );
 
-    // 1. Logo Path Tracing: 0.0 to 0.5 (first 1.1s)
+    // 1. Logo Path Tracing: 0.0 to 0.5 (first 1.75s)
     _logoTraceAnimation = CurvedAnimation(
       parent: _animationController,
       curve: const Interval(0.0, 0.5, curve: Curves.easeInOutCubic),
@@ -64,8 +64,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
   void _startSplashSequence() {
     _animationController.forward();
 
-    // Transition to Home Screen gracefully after the sequence settles (3.0 seconds total)
-    Timer(const Duration(milliseconds: 3000), () {
+    // Transition to Home Screen gracefully after the sequence settles (4.5 seconds total)
+    Timer(const Duration(milliseconds: 4500), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
