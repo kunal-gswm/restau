@@ -83,7 +83,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     // Using a post-frame callback prevents build phase exceptions
     if (cartState.items.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.pop(context);
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          Navigator.pop(context);
+        }
       });
       return const Scaffold(backgroundColor: AppColors.background);
     }
