@@ -39,13 +39,7 @@ class AppColors {
   /// Muted surface for inputs, secondary cards
   static const Color surfaceMuted = Color(0xFFF5F4F2);
 
-  /// Elevated surface with subtle warmth (for featured cards)
-  static const Color surfaceElevated = Color(0xFFFFFFFF);
 
-  // ─── Dark Theme (preserved for future) ───────────────────────
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color surfaceDark = Color(0xFF1E1E1E);
-  static const Color surfaceMutedDark = Color(0xFF2C2C2C);
 
   // ─── Text Colors ─────────────────────────────────────────────
   /// Primary text — near-black with warmth
@@ -66,9 +60,7 @@ class AppColors {
   /// Text on primary brand background
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
-  // ─── Dark Theme Text ─────────────────────────────────────────
-  static const Color textPrimaryDark = Color(0xFFFFFFFF);
-  static const Color textSecondaryDark = Color(0xFFA0A0A0);
+
 
   // ─── Borders & Dividers ──────────────────────────────────────
   /// Subtle border for cards
@@ -83,8 +75,7 @@ class AppColors {
   /// Thick divider / section separator
   static const Color dividerThick = Color(0xFFF0EFED);
 
-  /// Dark theme borders
-  static const Color borderDark = Color(0xFF333333);
+
 
   // ─── Feedback / Status Colors ────────────────────────────────
   static const Color error = Color(0xFFDC2626);

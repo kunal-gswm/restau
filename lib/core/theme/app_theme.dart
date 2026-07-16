@@ -192,22 +192,4 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme {
-    // Minimal dark theme preserved — not focus of pitch
-    return ThemeData(
-      brightness: Brightness.dark,
-      primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: AppColors.backgroundDark,
-      fontFamily: AppTypography.fontFamily,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        surface: AppColors.surfaceDark,
-        error: AppColors.error,
-        onPrimary: Colors.white,
-        onSurface: AppColors.textPrimaryDark,
-        onError: Colors.white,
-      ),
-      useMaterial3: true,
-    );
-  }
 }
