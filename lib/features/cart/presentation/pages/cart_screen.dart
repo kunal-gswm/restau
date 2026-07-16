@@ -120,8 +120,33 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       color: AppColors.error,
                       child: const Icon(Icons.delete, color: AppColors.textOnPrimary),
                     ),
+                    confirmDismiss: (direction) async {
+                      return await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text('Remove Item', style: AppTypography.h3(AppColors.textPrimary)),
+                          content: Text('Are you sure you want to remove ${item.product.title} from your cart?', style: AppTypography.body2(AppColors.textSecondary)),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: Text('Cancel', style: AppTypography.subtitle2(AppColors.textSecondary)),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: Text('Remove', style: AppTypography.subtitle2(AppColors.error)),
+                            ),
+                          ],
+                        ),
+                      ) ?? false;
+                    },
                     onDismissed: (_) {
                       ref.read(cartProvider.notifier).removeItem(item.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${item.product.title} removed from cart'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
                     },
                     child: Padding(
                       padding: AppSpacing.screenH.copyWith(bottom: AppSpacing.lg),
