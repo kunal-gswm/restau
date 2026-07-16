@@ -4,6 +4,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/user_providers.dart';
+import '../../../../core/models/user_model.dart';
 
 class PaymentMethodsScreen extends ConsumerWidget {
   const PaymentMethodsScreen({super.key});
@@ -29,26 +30,26 @@ class PaymentMethodsScreen extends ConsumerWidget {
               side: const BorderSide(color: AppColors.border),
             ),
             child: ListTile(
-              leading: Icon(payment.type == 'UPI' ? Icons.g_mobiledata : Icons.credit_card, color: AppColors.primary),
+              leading: Icon(payment.type.toLowerCase() == 'upi' ? Icons.g_mobiledata : Icons.credit_card, color: AppColors.primary),
               title: Text(payment.title, style: AppTypography.subtitle2(AppColors.textPrimary)),
               subtitle: Text(payment.subtitle, style: AppTypography.body2(AppColors.textSecondary)),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                onPressed: () => _confirmDelete(context, payment.title),
+                onPressed: () => _confirmDelete(context, ref, payment.title),
               ),
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddPaymentModal(context),
+        onPressed: () => _showAddPaymentModal(context, ref),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: AppColors.textOnPrimary),
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context, String methodName) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, String methodName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -58,6 +59,7 @@ class PaymentMethodsScreen extends ConsumerWidget {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
+              ref.read(userProvider.notifier).deletePaymentMethod(methodName);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('$methodName removed successfully!'), backgroundColor: AppColors.success),
@@ -71,7 +73,7 @@ class PaymentMethodsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddPaymentModal(BuildContext context) {
+  void _showAddPaymentModal(BuildContext context, WidgetRef ref) {
     final upiCtrl = TextEditingController();
     showModalBottomSheet(
       context: context,
@@ -100,7 +102,19 @@ class PaymentMethodsScreen extends ConsumerWidget {
               height: AppSizes.buttonHeightMd,
               child: ElevatedButton(
                 onPressed: () {
-                  if (upiCtrl.text.trim().isEmpty) return;
+                  final input = upiCtrl.text.trim();
+                  if (input.isEmpty) return;
+                  final isUpi = input.contains('@');
+                  final title = isUpi ? 'UPI ($input)' : 'Card ending in ${input.length > 4 ? input.substring(input.length - 4) : input}';
+                  final subtitle = isUpi ? 'Instant Bank Transfer' : 'Expires 12/28';
+                  ref.read(userProvider.notifier).addPaymentMethod(
+                    PaymentMethod(
+                      id: 'pm_${DateTime.now().millisecondsSinceEpoch}',
+                      type: isUpi ? 'upi' : 'card',
+                      title: title,
+                      subtitle: subtitle,
+                    ),
+                  );
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Payment method verified & added!'), backgroundColor: AppColors.success),

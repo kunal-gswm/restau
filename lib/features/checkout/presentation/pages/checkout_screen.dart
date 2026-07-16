@@ -6,6 +6,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/providers/cart_providers.dart';
 import '../../../../core/providers/user_providers.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../../../core/theme/app_animations.dart';
+import '../../../profile/presentation/pages/saved_addresses_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final double cartTotal;
@@ -168,8 +170,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(deliveryAddress.title, style: AppTypography.h3(AppColors.textPrimary)),
-                              const SizedBox(height: AppSpacing.xs),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(deliveryAddress.title, style: AppTypography.h3(AppColors.textPrimary)),
+                                  TextButton(
+                                    onPressed: () => _showAddressSelectorBottomSheet(context, ref),
+                                    child: Text('CHANGE', style: AppTypography.buttonSmall(AppColors.primary)),
+                                  ),
+                                ],
+                              ),
                               Text(deliveryAddress.fullAddress, style: AppTypography.body2(AppColors.textSecondary)),
                               const SizedBox(height: AppSpacing.lg),
                               TextField(
@@ -532,6 +542,93 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAddressSelectorBottomSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          final liveUser = ref.watch(userProvider);
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Select Delivery Address', style: AppTypography.h2(AppColors.textPrimary)),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textTertiary),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                for (var address in liveUser.addresses) ...[
+                  Card(
+                    color: address.isDefault ? AppColors.primaryLight : AppColors.surface,
+                    elevation: 0,
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.borderRadiusMd,
+                      side: BorderSide(
+                        color: address.isDefault ? AppColors.primary : AppColors.border,
+                        width: address.isDefault ? 1.5 : 1,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        address.isDefault ? Icons.star : Icons.location_on_outlined,
+                        color: address.isDefault ? AppColors.primary : AppColors.textSecondary,
+                      ),
+                      title: Text(address.title, style: AppTypography.subtitle2(AppColors.textPrimary)),
+                      subtitle: Text(address.fullAddress, style: AppTypography.body2(AppColors.textSecondary)),
+                      trailing: address.isDefault
+                          ? const Icon(Icons.check_circle, color: AppColors.primary)
+                          : const Icon(Icons.radio_button_unchecked, color: AppColors.textTertiary),
+                      onTap: () {
+                        ref.read(userProvider.notifier).setDefaultAddress(address.id);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Delivery address changed to ${address.title}'),
+                            backgroundColor: AppColors.success,
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  height: AppSizes.buttonHeightMd,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, AppPageRoute(page: const SavedAddressesScreen()));
+                    },
+                    icon: const Icon(Icons.add_location_alt_outlined, color: AppColors.primary),
+                    label: const Text('Manage & Add Addresses'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusPill),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -138,11 +139,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   ),
                   child: IconButton(
                     icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Sharing not fully implemented in demo')),
-                      );
-                    },
+                    onPressed: () => _showShareModal(context),
                   ),
                 ),
               ),
@@ -336,6 +333,57 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
               Text('+₹${option.extraPrice.toStringAsFixed(0)}', style: AppTypography.priceSmall(AppColors.textPrimary)),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showShareModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Share ${widget.product.title}', style: AppTypography.h2(AppColors.textPrimary)),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildShareIcon(context, Icons.message, 'WhatsApp', AppColors.success),
+                _buildShareIcon(context, Icons.camera_alt, 'Instagram', AppColors.accentAmber),
+                _buildShareIcon(context, Icons.copy, 'Copy Link', AppColors.primary, isCopy: true),
+                _buildShareIcon(context, Icons.more_horiz, 'More', AppColors.textSecondary),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareIcon(BuildContext context, IconData icon, String label, Color color, {bool isCopy = false}) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        if (isCopy) {
+          Clipboard.setData(ClipboardData(text: 'https://khana.app/item/${widget.product.id}'));
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isCopy ? 'Link copied to clipboard!' : 'Opening $label to share ${widget.product.title}...'),
+          ),
+        );
+      },
+      child: Column(
+        children: [
+          CircleAvatar(radius: 28, backgroundColor: color.withValues(alpha: 0.15), child: Icon(icon, color: color, size: 28)),
+          const SizedBox(height: AppSpacing.xs),
+          Text(label, style: AppTypography.caption(AppColors.textPrimary)),
+        ],
       ),
     );
   }

@@ -7,6 +7,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/providers/user_providers.dart';
 import '../../../../core/providers/cart_providers.dart';
 import '../../../../core/providers/menu_providers.dart';
+import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/utils/app_translations.dart';
 import '../../../../shared/widgets/section_header.dart';
 import '../../../../shared/widgets/stat_card.dart';
 import '../../../../shared/widgets/reward_card.dart';
@@ -198,8 +200,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SectionHeader(
-                  title: 'Khana Rewards',
-                  actionText: 'View All',
+                  title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Khana Rewards'),
+                  actionText: AppTranslations.tr(ref.watch(settingsProvider).locale, 'View All'),
                   onAction: () => _showRewardsBottomSheet(context),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -252,7 +254,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Past Orders', style: AppTypography.subtitle1(AppColors.textPrimary)),
+                  Text(AppTranslations.tr(ref.watch(settingsProvider).locale, 'Past Orders'), style: AppTypography.subtitle1(AppColors.textPrimary)),
                   const SizedBox(height: AppSpacing.lg),
                   OrderCard(
                     date: 'Today, 8:45 PM',
@@ -293,13 +295,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Account', style: AppTypography.subtitle1(AppColors.textPrimary)),
+                  Text(AppTranslations.tr(ref.watch(settingsProvider).locale, 'My Account'), style: AppTypography.subtitle1(AppColors.textPrimary)),
                   const SizedBox(height: AppSpacing.md),
                   SettingsGroup(
                     children: [
-                      SettingsTile(icon: Icons.location_on_outlined, title: 'Saved Addresses (${user.addresses.length})', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedAddressesScreen()))),
-                      SettingsTile(icon: Icons.payment_outlined, title: 'Payment Methods (${user.paymentMethods.length})', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentMethodsScreen()))),
-                      SettingsTile(icon: Icons.favorite_border, title: 'Favorites', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesScreen()))),
+                      SettingsTile(icon: Icons.location_on_outlined, title: '${AppTranslations.tr(ref.watch(settingsProvider).locale, "Saved Addresses")} (${user.addresses.length})', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedAddressesScreen()))),
+                      SettingsTile(icon: Icons.payment_outlined, title: '${AppTranslations.tr(ref.watch(settingsProvider).locale, "Payment Methods")} (${user.paymentMethods.length})', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentMethodsScreen()))),
+                      SettingsTile(icon: Icons.favorite_border, title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Favorites'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesScreen()))),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -320,7 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   SettingsGroup(
                     children: [
                       SettingsTile(icon: Icons.notifications_outlined, title: 'Notifications', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsSettingsScreen()))),
-                      SettingsTile(icon: Icons.language_outlined, title: 'Language', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LanguageScreen()))),
+                      SettingsTile(icon: Icons.language_outlined, title: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Language'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LanguageScreen()))),
                     ],
                   ),
 
@@ -523,20 +525,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
             const SizedBox(height: AppSpacing.md),
             TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email Address', border: OutlineInputBorder())),
             const SizedBox(height: AppSpacing.xl),
-            SizedBox(
-              width: double.infinity,
-              height: AppSizes.buttonHeightMd,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Account profile updated successfully!'), backgroundColor: AppColors.success),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
-                child: const Text('Save Changes'),
+              SizedBox(
+                width: double.infinity,
+                height: AppSizes.buttonHeightMd,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(userProvider.notifier).updateProfile(
+                      name: nameCtrl.text.trim(),
+                      phone: phoneCtrl.text.trim(),
+                      email: emailCtrl.text.trim(),
+                    );
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account profile updated successfully!'), backgroundColor: AppColors.success),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+                  child: const Text('Save Changes'),
+                ),
               ),
-            ),
           ],
         ),
       ),

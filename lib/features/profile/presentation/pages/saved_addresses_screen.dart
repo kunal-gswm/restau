@@ -4,6 +4,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/user_providers.dart';
+import '../../../../core/models/user_model.dart';
 
 class SavedAddressesScreen extends ConsumerWidget {
   const SavedAddressesScreen({super.key});
@@ -21,37 +22,46 @@ class SavedAddressesScreen extends ConsumerWidget {
         itemBuilder: (context, index) {
           final address = user.addresses[index];
           return Card(
-            color: AppColors.surface,
+            color: address.isDefault ? AppColors.primaryLight : AppColors.surface,
             elevation: 0,
             margin: const EdgeInsets.only(bottom: AppSpacing.md),
             shape: RoundedRectangleBorder(
               borderRadius: AppRadii.borderRadiusMd,
-              side: const BorderSide(color: AppColors.border),
+              side: BorderSide(
+                color: address.isDefault ? AppColors.primary : AppColors.border,
+                width: address.isDefault ? 1.5 : 1,
+              ),
             ),
             child: ListTile(
-              leading: Icon(address.isDefault ? Icons.star : Icons.location_on, color: AppColors.primary),
+              leading: Icon(address.isDefault ? Icons.star : Icons.location_on, color: address.isDefault ? AppColors.primary : AppColors.textSecondary),
               title: Text(address.title, style: AppTypography.subtitle2(AppColors.textPrimary)),
               subtitle: Text(address.fullAddress, style: AppTypography.body2(AppColors.textSecondary)),
               trailing: IconButton(
                 icon: const Icon(Icons.edit, color: AppColors.textTertiary),
-                onPressed: () => _showAddressModal(context, title: address.title, fullAddress: address.fullAddress),
+                onPressed: () => _showAddressModal(context, ref, addressId: address.id, title: address.title, fullAddress: address.fullAddress),
               ),
+              onTap: () {
+                ref.read(userProvider.notifier).setDefaultAddress(address.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${address.title} set as default delivery address'), backgroundColor: AppColors.success, duration: const Duration(seconds: 1)),
+                );
+              },
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddressModal(context),
+        onPressed: () => _showAddressModal(context, ref),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: AppColors.textOnPrimary),
       ),
     );
   }
 
-  void _showAddressModal(BuildContext context, {String? title, String? fullAddress}) {
+  void _showAddressModal(BuildContext context, WidgetRef ref, {String? addressId, String? title, String? fullAddress}) {
     final titleCtrl = TextEditingController(text: title ?? '');
     final addrCtrl = TextEditingController(text: fullAddress ?? '');
-    final isEditing = title != null;
+    final isEditing = title != null && addressId != null;
 
     showModalBottomSheet(
       context: context,
@@ -83,6 +93,18 @@ class SavedAddressesScreen extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () {
                   if (titleCtrl.text.trim().isEmpty || addrCtrl.text.trim().isEmpty) return;
+                  if (isEditing) {
+                    ref.read(userProvider.notifier).updateAddress(addressId, titleCtrl.text.trim(), addrCtrl.text.trim());
+                  } else {
+                    ref.read(userProvider.notifier).addAddress(
+                      Address(
+                        id: 'addr_${DateTime.now().millisecondsSinceEpoch}',
+                        title: titleCtrl.text.trim(),
+                        fullAddress: addrCtrl.text.trim(),
+                        isDefault: ref.read(userProvider).addresses.isEmpty,
+                      ),
+                    );
+                  }
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

@@ -16,9 +16,12 @@ import '../../../menu/presentation/pages/menu_screen.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
 import '../../../offers/presentation/pages/offers_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
-import '../../../menu/presentation/pages/search_screen.dart';
 import '../../../menu/presentation/pages/product_details_screen.dart';
+import '../../../menu/presentation/pages/search_screen.dart';
 import '../../../profile/presentation/pages/favorites_screen.dart';
+import '../../../profile/presentation/pages/saved_addresses_screen.dart';
+import '../../../../core/utils/app_translations.dart';
+import '../../../../core/providers/settings_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -73,26 +76,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           elevation: 0,
           backgroundColor: AppColors.surface,
           indicatorColor: AppColors.primaryLight,
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home, color: AppColors.primary),
-              label: 'Home',
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home, color: AppColors.primary),
+              label: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Home'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.restaurant_menu_outlined),
-              selectedIcon: Icon(Icons.restaurant_menu, color: AppColors.primary),
-              label: 'Menu',
+              icon: const Icon(Icons.restaurant_menu_outlined),
+              selectedIcon: const Icon(Icons.restaurant_menu, color: AppColors.primary),
+              label: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Menu'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.local_offer_outlined),
-              selectedIcon: Icon(Icons.local_offer, color: AppColors.primary),
-              label: 'Offers',
+              icon: const Icon(Icons.local_offer_outlined),
+              selectedIcon: const Icon(Icons.local_offer, color: AppColors.primary),
+              label: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Offers'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person, color: AppColors.primary),
-              label: 'Profile',
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person, color: AppColors.primary),
+              label: AppTranslations.tr(ref.watch(settingsProvider).locale, 'Profile'),
             ),
           ],
           selectedIndex: _currentNavIndex,
@@ -121,22 +124,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           surfaceTintColor: Colors.transparent,
           toolbarHeight: 64,
           titleSpacing: AppSpacing.xl,
-          leadingWidth: 120,
+          leadingWidth: 160,
           leading: Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.xl),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on, size: AppSizes.iconSm, color: AppColors.primary),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    user.addresses.firstWhere((a) => a.isDefault, orElse: () => user.addresses.first).title,
-                    style: AppTypography.subtitle2(AppColors.textPrimary),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+            padding: const EdgeInsets.only(left: AppSpacing.md),
+            child: InkWell(
+              onTap: () => _showAddressSelectorBottomSheet(context, ref),
+              borderRadius: AppRadii.borderRadiusPill,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on, size: AppSizes.iconSm, color: AppColors.primary),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        user.addresses.firstWhere((a) => a.isDefault, orElse: () => user.addresses.first).title,
+                        style: AppTypography.subtitle2(AppColors.textPrimary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down, size: AppSizes.iconSm, color: AppColors.textTertiary),
+                  ],
                 ),
-                const Icon(Icons.keyboard_arrow_down, size: AppSizes.iconSm, color: AppColors.textTertiary),
-              ],
+              ),
             ),
           ),
           title: Center(
@@ -176,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Good evening,',
+                      AppTranslations.tr(ref.watch(settingsProvider).locale, 'Good evening,'),
                       style: AppTypography.body1(AppColors.textTertiary),
                     ),
                     Text(
@@ -545,6 +555,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showAddressSelectorBottomSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          final liveUser = ref.watch(userProvider);
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Select Delivery Address', style: AppTypography.h2(AppColors.textPrimary)),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textTertiary),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                for (var address in liveUser.addresses) ...[
+                  Card(
+                    color: address.isDefault ? AppColors.primaryLight : AppColors.surface,
+                    elevation: 0,
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.borderRadiusMd,
+                      side: BorderSide(
+                        color: address.isDefault ? AppColors.primary : AppColors.border,
+                        width: address.isDefault ? 1.5 : 1,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        address.isDefault ? Icons.star : Icons.location_on_outlined,
+                        color: address.isDefault ? AppColors.primary : AppColors.textSecondary,
+                      ),
+                      title: Text(address.title, style: AppTypography.subtitle2(AppColors.textPrimary)),
+                      subtitle: Text(address.fullAddress, style: AppTypography.body2(AppColors.textSecondary)),
+                      trailing: address.isDefault
+                          ? const Icon(Icons.check_circle, color: AppColors.primary)
+                          : const Icon(Icons.radio_button_unchecked, color: AppColors.textTertiary),
+                      onTap: () {
+                        ref.read(userProvider.notifier).setDefaultAddress(address.id);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Delivery address changed to ${address.title}'),
+                            backgroundColor: AppColors.success,
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  height: AppSizes.buttonHeightMd,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, AppPageRoute(page: const SavedAddressesScreen()));
+                    },
+                    icon: const Icon(Icons.add_location_alt_outlined, color: AppColors.primary),
+                    label: const Text('Manage & Add Addresses'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusPill),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

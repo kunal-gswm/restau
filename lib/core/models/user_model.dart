@@ -10,6 +10,20 @@ class Address {
     required this.fullAddress,
     this.isDefault = false,
   });
+
+  Address copyWith({
+    String? id,
+    String? title,
+    String? fullAddress,
+    bool? isDefault,
+  }) {
+    return Address(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      fullAddress: fullAddress ?? this.fullAddress,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
 }
 
 class PaymentMethod {
@@ -26,6 +40,22 @@ class PaymentMethod {
     required this.subtitle,
     this.isDefault = false,
   });
+
+  PaymentMethod copyWith({
+    String? id,
+    String? type,
+    String? title,
+    String? subtitle,
+    bool? isDefault,
+  }) {
+    return PaymentMethod(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
 }
 
 class User {
@@ -48,4 +78,26 @@ class User {
     this.addresses = const [],
     this.paymentMethods = const [],
   });
+
+  User copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phone,
+    int? loyaltyPoints,
+    String? loyaltyTier,
+    List<Address>? addresses,
+    List<PaymentMethod>? paymentMethods,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
+      loyaltyTier: loyaltyTier ?? this.loyaltyTier,
+      addresses: addresses ?? this.addresses,
+      paymentMethods: paymentMethods ?? this.paymentMethods,
+    );
+  }
 }
