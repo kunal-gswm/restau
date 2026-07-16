@@ -9,11 +9,12 @@ import '../../../../core/theme/app_animations.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../../home/presentation/pages/home_screen.dart';
 
-/// Khana Splash Screen
+/// Khana Splash Screen — Premium Cinematic Reveal
 ///
-/// A premium, minimal splash screen representing the Khana brand.
-/// It features a staggered fade and slide up animation for the logo, brand name, and tagline.
-/// Adheres to accessibility (supports reduced motion) and automatically transitions to the HomeScreen.
+/// A highly unique splash screen featuring:
+/// 1. Path-tracing animation of the culinary cloche logo.
+/// 2. Cinematic letter-spacing tracking expansion for the brand text.
+/// 3. Smooth exit transition to the Home screen.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -23,8 +24,10 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  
+  late Animation<double> _logoTraceAnimation;
+  late Animation<double> _textFadeAnimation;
+  late Animation<double> _textTrackingAnimation;
 
   @override
   void initState() {
@@ -32,30 +35,37 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 2200),
     );
 
-    final curvedAnimation = CurvedAnimation(
+    // 1. Logo Path Tracing: 0.0 to 0.5 (first 1.1s)
+    _logoTraceAnimation = CurvedAnimation(
       parent: _animationController,
-      curve: AppCurves.enter,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeInOutCubic),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation);
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(curvedAnimation);
+    // 2. Text Fade In: 0.4 to 0.7
+    _textFadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.4, 0.7, curve: Curves.easeOut),
+    );
+
+    // 3. Text Tracking (Letter Spacing): 0.4 to 1.0 (smoothly settles in)
+    _textTrackingAnimation = Tween<double>(begin: 12.0, end: 2.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
 
     _startSplashSequence();
   }
 
   void _startSplashSequence() {
-    // Determine if reduced motion is enabled (we check this post-frame to ensure MediaQuery is available if needed,
-    // but typically we can check it in build. For animation controller, we'll just start it.)
     _animationController.forward();
 
-    // Transition to Home Screen after 2.2 seconds to allow the logo animation and a brief pause to be fully visible.
-    Timer(const Duration(milliseconds: 2200), () {
+    // Transition to Home Screen gracefully after the sequence settles (3.0 seconds total)
+    Timer(const Duration(milliseconds: 3000), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -73,12 +83,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    // Ensure the background is AppColors.background (warm off-white) in light mode,
-    // or adapt if a dark theme was applied.
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDarkMode ? const Color(0xFF1F2937) : AppColors.background;
     final textPrimary = isDarkMode ? AppColors.textInverse : AppColors.textPrimary;
     final textSecondaryColor = isDarkMode ? AppColors.textDisabled : AppColors.textSecondary;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -88,58 +97,63 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
-              // Respect accessibility reduce motion setting
-              final disableAnimations = MediaQuery.of(context).disableAnimations;
+              final logoProgress = disableAnimations ? 1.0 : _logoTraceAnimation.value;
+              final textOpacity = disableAnimations ? 1.0 : _textFadeAnimation.value;
+              final textTracking = disableAnimations ? 2.0 : _textTrackingAnimation.value;
 
-              return FadeTransition(
-                opacity: disableAnimations ? const AlwaysStoppedAnimation(1.0) : _fadeAnimation,
-                child: SlideTransition(
-                  position: disableAnimations ? const AlwaysStoppedAnimation(Offset.zero) : _slideAnimation,
-                  child: child,
-                ),
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // ─── Path-Traced Logo ────────────────────────────
+                  AppLogo(size: 110, progress: logoProgress),
+                  
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // ─── Cinematic App Name ────────────────────────
+                  Opacity(
+                    opacity: textOpacity,
+                    child: Text(
+                      'KHANA',
+                      style: AppTypography.display(textPrimary).copyWith(
+                        letterSpacing: textTracking,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // ─── Tagline ───────────────────────────────────
+                  Opacity(
+                    opacity: textOpacity,
+                    child: Text(
+                      '"Food made memorable."',
+                      style: AppTypography.subtitle1(textSecondaryColor).copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.xxxl * 2),
+
+                  // ─── Subtle Loading Indicator ──────────────────
+                  Opacity(
+                    opacity: textOpacity,
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primary.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               );
             },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // ─── Logo ──────────────────────────────────────
-                const AppLogo(size: 110),
-                
-                const SizedBox(height: AppSpacing.xxl),
-
-                // ─── App Name ──────────────────────────────────
-                Text(
-                  'KHANA',
-                  style: AppTypography.display(textPrimary).copyWith(
-                    letterSpacing: 2.0, // Added elegant spacing for premium feel
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                
-                const SizedBox(height: AppSpacing.sm),
-
-                // ─── Tagline ───────────────────────────────────
-                Text(
-                  '"Food made memorable."',
-                  style: AppTypography.subtitle1(textSecondaryColor).copyWith(
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-
-                const SizedBox(height: AppSpacing.xxxl * 2),
-
-                // ─── Subtle Loading Indicator ──────────────────
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.0,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary.withValues(alpha: 0.6)),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
