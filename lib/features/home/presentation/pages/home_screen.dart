@@ -141,7 +141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Text(
               'KHANA',
               style: TextStyle(
-                fontFamily: 'Inter',
+                fontFamily: AppTypography.fontFamily,
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 3.0,

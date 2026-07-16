@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   'KHANA',
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: AppTypography.fontFamily,
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 4.0,

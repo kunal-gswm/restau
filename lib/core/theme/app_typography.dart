@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Khana Design System — Typography Tokens
 ///
@@ -7,7 +8,7 @@ import 'package:flutter/material.dart';
 class AppTypography {
   AppTypography._();
 
-  static const String fontFamily = 'Inter';
+  static String? get fontFamily => GoogleFonts.inter().fontFamily;
 
   // ─── Display ─────────────────────────────────────────────────
   /// Display: 32px / Bold — Hero greeting, feature headers
