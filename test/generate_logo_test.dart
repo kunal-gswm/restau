@@ -138,7 +138,6 @@ void main() {
         file.createSync(recursive: true);
       }
       file.writeAsBytesSync(byteData.buffer.asUint8List());
-      print('Successfully generated assets/images/app_icon.png');
     }
   });
 }
