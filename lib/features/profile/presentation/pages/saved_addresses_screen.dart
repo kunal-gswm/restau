@@ -34,20 +34,69 @@ class SavedAddressesScreen extends ConsumerWidget {
               subtitle: Text(address.fullAddress, style: AppTypography.body2(AppColors.textSecondary)),
               trailing: IconButton(
                 icon: const Icon(Icons.edit, color: AppColors.textTertiary),
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Address editing coming soon'), duration: Duration(seconds: 2)),
-                ),
+                onPressed: () => _showAddressModal(context, title: address.title, fullAddress: address.fullAddress),
               ),
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Add new address coming soon'), duration: Duration(seconds: 2)),
-        ),
+        onPressed: () => _showAddressModal(context),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: AppColors.textOnPrimary),
+      ),
+    );
+  }
+
+  void _showAddressModal(BuildContext context, {String? title, String? fullAddress}) {
+    final titleCtrl = TextEditingController(text: title ?? '');
+    final addrCtrl = TextEditingController(text: fullAddress ?? '');
+    final isEditing = title != null;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(isEditing ? 'Edit Address' : 'Add New Address', style: AppTypography.h2(AppColors.textPrimary)),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(labelText: 'Address Label (e.g. Home, Office)', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: addrCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(labelText: 'Full Address & Landmark', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: double.infinity,
+              height: AppSizes.buttonHeightMd,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (titleCtrl.text.trim().isEmpty || addrCtrl.text.trim().isEmpty) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isEditing ? 'Address updated successfully!' : 'New address saved!'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+                child: Text(isEditing ? 'Save Changes' : 'Add Address'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

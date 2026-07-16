@@ -17,6 +17,8 @@ import '../../../cart/presentation/pages/cart_screen.dart';
 import '../../../offers/presentation/pages/offers_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
 import '../../../menu/presentation/pages/search_screen.dart';
+import '../../../menu/presentation/pages/product_details_screen.dart';
+import '../../../profile/presentation/pages/favorites_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -215,7 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         emoji: '✨', 
                         isSelected: ref.watch(selectedCategoryProvider) == 'All',
                         onTap: () {
-                          ref.read(selectedCategoryProvider.notifier).setCategory(categories.first);
+                          ref.read(selectedCategoryProvider.notifier).setCategory('All');
                           setState(() => _currentNavIndex = 1);
                         },
                       );
@@ -249,7 +251,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: 'Your Favourites',
                   actionText: 'See all',
                   onAction: () {
-                     setState(() => _currentNavIndex = 1);
+                    Navigator.push(context, AppPageRoute(page: const FavoritesScreen()));
                   },
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -262,13 +264,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     separatorBuilder: (c, i) => const SizedBox(width: AppSpacing.md),
                     itemBuilder: (context, index) {
                       final product = favorites[index];
+                      final cartQty = cartState.items.where((i) => i.product.id == product.id).fold(0, (sum, i) => sum + i.quantity);
                       return OrderAgainCard(
                         title: product.title,
                         contextText: product.category,
                         price: '₹${product.price.toInt()}',
                         imageUrl: product.imageUrl,
-                        onReorder: () {
-                           ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
+                        quantity: cartQty,
+                        onTap: () {
+                          Navigator.push(context, AppDialogRoute(page: ProductDetailsScreen(product: product)));
+                        },
+                        onIncrement: () {
+                          ref.read(cartProvider.notifier).addItem(product: product, quantity: 1);
+                        },
+                        onDecrement: () {
+                          ref.read(cartProvider.notifier).removeItem(product.id);
                         },
                       );
                     },
@@ -305,9 +315,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         borderRadius: AppRadii.borderRadiusXxl,
         boxShadow: AppElevation.high,
       ),
-      child: ClipRRect(
+      child: Material(
+        color: Colors.transparent,
         borderRadius: AppRadii.borderRadiusXxl,
-        child: Stack(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(context, AppDialogRoute(page: ProductDetailsScreen(product: heroProduct)));
+          },
+          child: Stack(
           fit: StackFit.expand,
           children: [
             Image.network(
@@ -400,8 +416,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTodaysSpecial(BuildContext context) {
     final recommendations = ref.watch(recommendedProductsProvider);
@@ -417,9 +434,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           borderRadius: AppRadii.borderRadiusXxl,
           boxShadow: AppElevation.medium,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: AppRadii.borderRadiusXxl,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(context, AppDialogRoute(page: ProductDetailsScreen(product: pickProduct)));
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Stack(
               children: [
                 ClipRRect(
@@ -517,6 +542,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );

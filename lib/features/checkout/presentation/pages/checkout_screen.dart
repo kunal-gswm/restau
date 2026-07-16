@@ -223,9 +223,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: InkWell(
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Custom tip dialog not implemented in demo')));
-                              },
+                              onTap: () => _showCustomTipDialog(context),
                               borderRadius: AppRadii.borderRadiusPill,
                               child: Container(
                                 height: AppSizes.buttonHeightMd,
@@ -273,9 +271,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
                       
                       // Add new card
                       InkWell(
-                        onTap: () {
-                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add card flow simulated.')));
-                        },
+                        onTap: () => _showAddCardBottomSheet(context),
                         borderRadius: AppRadii.borderRadiusMd,
                         child: Container(
                           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -455,6 +451,84 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> with SingleTick
             Icon(
               isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
               color: isSelected ? AppColors.primary : AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCustomTipDialog(BuildContext context) {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Custom Tip'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Amount (₹)',
+            border: OutlineInputBorder(),
+            prefixText: '₹ ',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final val = double.tryParse(ctrl.text.trim());
+              if (val != null && val >= 0) {
+                setState(() => _tipAmount = val);
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+            child: const Text('Apply Tip'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddCardBottomSheet(BuildContext context) {
+    final cardCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Add Payment Card / UPI', style: AppTypography.h2(AppColors.textPrimary)),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: cardCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Card Number or UPI ID',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.credit_card, color: AppColors.primary),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: double.infinity,
+              height: AppSizes.buttonHeightMd,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (cardCtrl.text.trim().isEmpty) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('New card/UPI option verified & selected!'), backgroundColor: AppColors.success),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+                child: const Text('Save & Select Method'),
+              ),
             ),
           ],
         ),

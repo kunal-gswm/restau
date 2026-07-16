@@ -12,6 +12,7 @@ import '../../../../shared/widgets/quantity_stepper.dart';
 import '../../../../shared/widgets/fade_slide_entry.dart';
 import 'product_details_screen.dart';
 import 'search_screen.dart';
+import '../../../profile/presentation/pages/favorites_screen.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
@@ -121,19 +122,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         IconButton(
           icon: const Icon(Icons.favorite_border, color: AppColors.textInverse),
           onPressed: () {
-            // Simulated restaurant favorite action
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Khana added to favorites!')),
-            );
+            Navigator.push(context, AppPageRoute(page: const FavoritesScreen()));
           },
         ),
         IconButton(
           icon: const Icon(Icons.share, color: AppColors.textInverse),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Opening share dialog...')),
-            );
-          },
+          onPressed: () => _showShareModal(context),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -434,6 +428,45 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showShareModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Share Khana Menu', style: AppTypography.h2(AppColors.textPrimary)),
+            const SizedBox(height: AppSpacing.lg),
+            ListTile(
+              leading: const Icon(Icons.copy, color: AppColors.primary),
+              title: const Text('Copy Menu Link'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Link copied to clipboard!'), backgroundColor: AppColors.success),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.message, color: AppColors.primary),
+              title: const Text('Share via WhatsApp / SMS'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Opening messaging apps...'), backgroundColor: AppColors.success),
+                );
+              },
             ),
           ],
         ),

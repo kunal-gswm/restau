@@ -13,6 +13,7 @@ import '../../../../shared/widgets/animated_price.dart';
 import '../../../../shared/widgets/upsell_card.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../checkout/presentation/pages/checkout_screen.dart';
+import '../../../menu/presentation/pages/product_details_screen.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -229,6 +230,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                 SnackBar(content: Text('${product.title} added')),
                               );
                             },
+                            onTap: () {
+                              Navigator.push(context, AppDialogRoute(page: ProductDetailsScreen(product: product)));
+                            },
                           );
                         },
                       ),
@@ -395,7 +399,48 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('₹${cartState.grandTotal.toStringAsFixed(0)}', style: AppTypography.priceLarge(AppColors.textPrimary)),
-                  Text('View detailed bill', style: AppTypography.caption(AppColors.primary).copyWith(fontWeight: FontWeight.w600)),
+                  InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: AppColors.surface,
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+                        builder: (context) => Padding(
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Detailed Bill Breakdown', style: AppTypography.h2(AppColors.textPrimary)),
+                              const SizedBox(height: AppSpacing.lg),
+                              _buildBillRow('Items Total', cartState.itemTotal),
+                              const SizedBox(height: AppSpacing.sm),
+                              if (cartState.discount > 0) ...[
+                                _buildBillRow('Discount', -cartState.discount),
+                                const SizedBox(height: AppSpacing.sm),
+                              ],
+                              _buildBillRow('Taxes & Charges', cartState.taxes),
+                              const SizedBox(height: AppSpacing.sm),
+                              _buildBillRow('Delivery Fee', cartState.deliveryFee, isFree: cartState.deliveryFee == 0),
+                              const Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.md), child: Divider()),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Grand Total', style: AppTypography.h2(AppColors.textPrimary)),
+                                  Text('₹${cartState.grandTotal.toStringAsFixed(0)}', style: AppTypography.priceLarge(AppColors.textPrimary)),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text('View detailed bill', style: AppTypography.caption(AppColors.primary).copyWith(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(width: AppSpacing.xl),

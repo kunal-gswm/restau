@@ -9,6 +9,7 @@ class RewardCard extends StatelessWidget {
   final String cost;
   final bool isUnlocked;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const RewardCard({
     super.key,
@@ -16,6 +17,7 @@ class RewardCard extends StatelessWidget {
     required this.cost,
     this.isUnlocked = false,
     this.icon = Icons.fastfood,
+    this.onTap,
   });
 
   @override
@@ -31,41 +33,49 @@ class RewardCard extends StatelessWidget {
         ),
         boxShadow: isUnlocked ? AppElevation.low : AppElevation.none,
       ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (isUnlocked)
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.xs),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      shape: BoxShape.circle,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppRadii.borderRadiusXl,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isUnlocked)
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: AppColors.primary, size: AppSizes.iconMd),
+                      )
+                    else
+                      const Icon(Icons.lock_outline, color: AppColors.textTertiary, size: AppSizes.iconMd),
+                    const Spacer(),
+                    Text(
+                      title,
+                      style: AppTypography.subtitle2(isUnlocked ? AppColors.textPrimary : AppColors.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Icon(icon, color: AppColors.primary, size: AppSizes.iconMd),
-                  )
-                else
-                  const Icon(Icons.lock_outline, color: AppColors.textTertiary, size: AppSizes.iconMd),
-                const Spacer(),
-                Text(
-                  title,
-                  style: AppTypography.subtitle2(isUnlocked ? AppColors.textPrimary : AppColors.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 2),
+                    Text(
+                      cost,
+                      style: AppTypography.caption(isUnlocked ? AppColors.primary : AppColors.textTertiary).copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  cost,
-                  style: AppTypography.caption(isUnlocked ? AppColors.primary : AppColors.textTertiary).copyWith(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

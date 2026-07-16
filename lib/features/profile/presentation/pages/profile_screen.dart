@@ -5,6 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/providers/user_providers.dart';
+import '../../../../core/providers/cart_providers.dart';
+import '../../../../core/providers/menu_providers.dart';
 import '../../../../shared/widgets/section_header.dart';
 import '../../../../shared/widgets/stat_card.dart';
 import '../../../../shared/widgets/reward_card.dart';
@@ -87,9 +89,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Account settings coming soon'), duration: Duration(seconds: 2)),
-            ),
+            onPressed: () => _showAccountSettingsModal(context),
           ),
         ],
       ),
@@ -200,9 +200,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                 SectionHeader(
                   title: 'Khana Rewards',
                   actionText: 'View All',
-                  onAction: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('All rewards coming soon'), duration: Duration(seconds: 2)),
-                  ),
+                  onAction: () => _showRewardsBottomSheet(context),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
@@ -211,10 +209,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                     padding: AppSpacing.screenH,
                     scrollDirection: Axis.horizontal,
                     children: [
-                      RewardCard(title: 'Mango Lassi', cost: '400 pts', isUnlocked: user.loyaltyPoints >= 400, icon: Icons.local_drink),
-                      RewardCard(title: 'Paneer Tikka', cost: '800 pts', isUnlocked: user.loyaltyPoints >= 800),
-                      RewardCard(title: 'Signature Thali', cost: '1500 pts', isUnlocked: user.loyaltyPoints >= 1500),
-                      RewardCard(title: 'Family Feast', cost: '2500 pts', isUnlocked: user.loyaltyPoints >= 2500),
+                      RewardCard(
+                        title: 'Mango Lassi',
+                        cost: '400 pts',
+                        isUnlocked: user.loyaltyPoints >= 400,
+                        icon: Icons.local_drink,
+                        onTap: () => _handleRewardTap('Mango Lassi', 400, user.loyaltyPoints >= 400),
+                      ),
+                      RewardCard(
+                        title: 'Paneer Tikka',
+                        cost: '800 pts',
+                        isUnlocked: user.loyaltyPoints >= 800,
+                        onTap: () => _handleRewardTap('Paneer Tikka', 800, user.loyaltyPoints >= 800),
+                      ),
+                      RewardCard(
+                        title: 'Signature Thali',
+                        cost: '1500 pts',
+                        isUnlocked: user.loyaltyPoints >= 1500,
+                        onTap: () => _handleRewardTap('Signature Thali', 1500, user.loyaltyPoints >= 1500),
+                      ),
+                      RewardCard(
+                        title: 'Family Feast',
+                        cost: '2500 pts',
+                        isUnlocked: user.loyaltyPoints >= 2500,
+                        onTap: () => _handleRewardTap('Family Feast', 2500, user.loyaltyPoints >= 2500),
+                      ),
                     ],
                   ),
                 ),
@@ -240,31 +259,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                     items: 'Butter Chicken Thali + 2 more',
                     price: 750.0,
                     status: 'Delivered',
-                    onReorder: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Reorder coming soon'), duration: Duration(seconds: 2)),
-                    ),
-                    onRate: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order rating coming soon'), duration: Duration(seconds: 2)),
-                    ),
+                    onReorder: () => _reorderProduct('p1'),
+                    onRate: () => _showRatingDialog(context, 'Butter Chicken Thali + 2 more'),
                   ),
                   OrderCard(
                     date: '12 Jul, 7:30 PM',
                     items: 'Chicken Biryani (Large)',
                     price: 540.0,
                     status: 'Delivered',
-                    onReorder: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Reorder coming soon'), duration: Duration(seconds: 2)),
-                    ),
-                    onRate: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order rating coming soon'), duration: Duration(seconds: 2)),
-                    ),
+                    onReorder: () => _reorderProduct('p3'),
+                    onRate: () => _showRatingDialog(context, 'Chicken Biryani (Large)'),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Center(
                     child: TextButton(
-                      onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Full order history coming soon'), duration: Duration(seconds: 2)),
-                      ),
+                      onPressed: () => _showAllOrdersBottomSheet(context),
                       child: const Text('View All Orders'),
                     ),
                   ),
@@ -440,6 +449,255 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
           const SizedBox(height: AppSpacing.sm),
           Text('Scan at counter to earn points', style: AppTypography.caption(AppColors.textSecondary)),
         ],
+      ),
+    );
+  }
+
+  void _reorderProduct(String productId) {
+    final products = ref.read(productsProvider);
+    final p = products.firstWhere((item) => item.id == productId, orElse: () => products.first);
+    ref.read(cartProvider.notifier).addItem(product: p, quantity: 1);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added ${p.title} to order!'),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _handleRewardTap(String rewardName, int cost, bool isUnlocked) {
+    if (!isUnlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You need $cost points to unlock $rewardName')),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Redeem $rewardName?'),
+        content: Text('This will use $cost points from your balance.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$rewardName redeemed! Show code KHANA-$cost at checkout.'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+            child: const Text('Redeem'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAccountSettingsModal(BuildContext context) {
+    final user = ref.read(userProvider);
+    final nameCtrl = TextEditingController(text: user.name);
+    final phoneCtrl = TextEditingController(text: user.phone);
+    final emailCtrl = TextEditingController(text: user.email);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Account Settings', style: AppTypography.h2(AppColors.textPrimary)),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder())),
+            const SizedBox(height: AppSpacing.md),
+            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder())),
+            const SizedBox(height: AppSpacing.md),
+            TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email Address', border: OutlineInputBorder())),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: double.infinity,
+              height: AppSizes.buttonHeightMd,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Account profile updated successfully!'), backgroundColor: AppColors.success),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+                child: const Text('Save Changes'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRewardsBottomSheet(BuildContext context) {
+    final user = ref.read(userProvider);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Available Rewards catalog', style: AppTypography.h2(AppColors.textPrimary)),
+            const SizedBox(height: AppSpacing.sm),
+            Text('You have ${user.loyaltyPoints} points', style: AppTypography.subtitle2(AppColors.primary)),
+            const SizedBox(height: AppSpacing.lg),
+            ListTile(
+              leading: const Icon(Icons.local_drink, color: AppColors.primary),
+              title: const Text('Mango Lassi'),
+              subtitle: const Text('400 pts'),
+              trailing: ElevatedButton(
+                onPressed: user.loyaltyPoints >= 400 ? () => _handleRewardTap('Mango Lassi', 400, true) : null,
+                child: const Text('Redeem'),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.fastfood, color: AppColors.primary),
+              title: const Text('Paneer Tikka'),
+              subtitle: const Text('800 pts'),
+              trailing: ElevatedButton(
+                onPressed: user.loyaltyPoints >= 800 ? () => _handleRewardTap('Paneer Tikka', 800, true) : null,
+                child: const Text('Redeem'),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.restaurant, color: AppColors.primary),
+              title: const Text('Signature Thali'),
+              subtitle: const Text('1500 pts'),
+              trailing: ElevatedButton(
+                onPressed: user.loyaltyPoints >= 1500 ? () => _handleRewardTap('Signature Thali', 1500, true) : null,
+                child: const Text('Redeem'),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.family_restroom, color: AppColors.primary),
+              title: const Text('Family Feast'),
+              subtitle: const Text('2500 pts'),
+              trailing: ElevatedButton(
+                onPressed: user.loyaltyPoints >= 2500 ? () => _handleRewardTap('Family Feast', 2500, true) : null,
+                child: const Text('Redeem'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAllOrdersBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl))),
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.7,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Order History', style: AppTypography.h2(AppColors.textPrimary)),
+              const SizedBox(height: AppSpacing.lg),
+              Expanded(
+                child: ListView(
+                  children: [
+                    OrderCard(
+                      date: 'Today, 8:45 PM',
+                      items: 'Butter Chicken Thali + 2 more',
+                      price: 750.0,
+                      status: 'Delivered',
+                      onReorder: () => _reorderProduct('p1'),
+                      onRate: () => _showRatingDialog(context, 'Butter Chicken Thali + 2 more'),
+                    ),
+                    OrderCard(
+                      date: '12 Jul, 7:30 PM',
+                      items: 'Chicken Biryani (Large)',
+                      price: 540.0,
+                      status: 'Delivered',
+                      onReorder: () => _reorderProduct('p3'),
+                      onRate: () => _showRatingDialog(context, 'Chicken Biryani (Large)'),
+                    ),
+                    OrderCard(
+                      date: '5 Jul, 1:15 PM',
+                      items: 'Veg Premium Thali + Lassi',
+                      price: 450.0,
+                      status: 'Delivered',
+                      onReorder: () => _reorderProduct('p2'),
+                      onRate: () => _showRatingDialog(context, 'Veg Premium Thali + Lassi'),
+                    ),
+                    OrderCard(
+                      date: '28 Jun, 9:00 PM',
+                      items: 'Tandoori Chicken Full',
+                      price: 620.0,
+                      status: 'Delivered',
+                      onReorder: () => _reorderProduct('p4'),
+                      onRate: () => _showRatingDialog(context, 'Tandoori Chicken Full'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRatingDialog(BuildContext context, String orderTitle) {
+    int selectedStars = 5;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Rate your Order'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(orderTitle, style: AppTypography.body2(AppColors.textSecondary), textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(index < selectedStars ? Icons.star : Icons.star_border, color: AppColors.accentGold, size: 32),
+                    onPressed: () => setState(() => selectedStars = index + 1),
+                  );
+                }),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Skip')),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Thank you for rating $selectedStars stars!'), backgroundColor: AppColors.success),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.textOnPrimary),
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
       ),
     );
   }
