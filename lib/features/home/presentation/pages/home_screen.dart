@@ -123,29 +123,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           backgroundColor: AppColors.background.withValues(alpha: 0.97),
           surfaceTintColor: Colors.transparent,
           toolbarHeight: 64,
-          titleSpacing: AppSpacing.xl,
-          leadingWidth: 220,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.md),
-            child: InkWell(
-              onTap: () => _showAddressSelectorBottomSheet(context, ref),
-              borderRadius: AppRadii.borderRadiusPill,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on, size: AppSizes.iconSm, color: AppColors.primary),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        user.addresses.firstWhere((a) => a.isDefault, orElse: () => user.addresses.first).title,
-                        style: AppTypography.subtitle2(AppColors.textPrimary),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+          automaticallyImplyLeading: false,
+          titleSpacing: AppSpacing.lg,
+          title: InkWell(
+            onTap: () => _showAddressSelectorBottomSheet(context, ref),
+            borderRadius: AppRadii.borderRadiusPill,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.location_on, size: AppSizes.iconSm, color: AppColors.primary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Flexible(
+                    child: Text(
+                      user.addresses.firstWhere((a) => a.isDefault, orElse: () => user.addresses.first).title,
+                      style: AppTypography.subtitle2(AppColors.textPrimary),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const Icon(Icons.keyboard_arrow_down, size: AppSizes.iconSm, color: AppColors.textTertiary),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  const Icon(Icons.keyboard_arrow_down, size: AppSizes.iconSm, color: AppColors.textTertiary),
+                ],
               ),
             ),
           ),
@@ -168,7 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // ─── Greeting ──────────────────────────────────────
               Padding(
                 padding: EdgeInsets.fromLTRB(
-                  AppSpacing.xl, AppSpacing.xxl, AppSpacing.xl, AppSpacing.lg,
+                  AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.md,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,7 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // ─── Hero Banner ───────────────────────────────────
               _buildHeroBanner(context),
 
-              const SizedBox(height: AppSpacing.sectionGap),
+              const SizedBox(height: AppSpacing.lg),
 
               // ─── Loyalty ───────────────────────────────────────
               LoyaltySummaryCard(
@@ -198,7 +197,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
               ),
 
-              const SizedBox(height: AppSpacing.sectionGap),
+              const SizedBox(height: AppSpacing.lg),
 
               // ─── Categories ────────────────────────────────────
               SizedBox(
@@ -241,7 +240,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.sectionGap),
+              const SizedBox(height: AppSpacing.lg),
 
               // ─── Order Again ───────────────────────────────────
               if (favorites.isNotEmpty) ...[
@@ -252,7 +251,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Navigator.push(context, AppPageRoute(page: const FavoritesScreen()));
                   },
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   height: 225,
                   child: ListView.separated(
@@ -282,12 +281,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sectionGap),
+                const SizedBox(height: AppSpacing.lg),
               ],
 
               // ─── Today's Special ───────────────────────────────
               SectionHeader(title: 'Chef\'s Recommendation'),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.md),
               _buildTodaysSpecial(context),
 
               // Bottom padding for FAB
