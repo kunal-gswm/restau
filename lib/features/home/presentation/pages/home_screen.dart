@@ -124,7 +124,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           surfaceTintColor: Colors.transparent,
           toolbarHeight: 64,
           titleSpacing: AppSpacing.xl,
-          leadingWidth: 160,
+          leadingWidth: 220,
           leading: Padding(
             padding: const EdgeInsets.only(left: AppSpacing.md),
             child: InkWell(
@@ -146,18 +146,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Icon(Icons.keyboard_arrow_down, size: AppSizes.iconSm, color: AppColors.textTertiary),
                   ],
                 ),
-              ),
-            ),
-          ),
-          title: Center(
-            child: Text(
-              'KHANA',
-              style: TextStyle(
-                fontFamily: AppTypography.fontFamily,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 3.0,
-                color: AppColors.primary,
               ),
             ),
           ),
