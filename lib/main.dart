@@ -23,8 +23,7 @@ class KhanaApp extends ConsumerWidget {
       title: 'Khana App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: settings.themeMode,
+      themeMode: ThemeMode.light,
       locale: settings.locale,
       home: const HomeScreen(),
     );

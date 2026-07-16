@@ -18,7 +18,6 @@ import 'support_chat_screen.dart';
 import 'faq_screen.dart';
 import 'contact_us_screen.dart';
 import 'notifications_settings_screen.dart';
-import 'appearance_screen.dart';
 import 'language_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -298,7 +297,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   SettingsGroup(
                     children: [
                       SettingsTile(icon: Icons.notifications_outlined, title: 'Notifications', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsSettingsScreen()))),
-                      SettingsTile(icon: Icons.dark_mode_outlined, title: 'Appearance', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppearanceScreen()))),
                       SettingsTile(icon: Icons.language_outlined, title: 'Language', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LanguageScreen()))),
                     ],
                   ),

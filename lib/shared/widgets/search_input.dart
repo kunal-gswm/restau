@@ -11,14 +11,18 @@ class SearchInput extends StatelessWidget {
   final String hintText;
   final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   final bool isInteractive;
+  final bool autoFocus;
 
   const SearchInput({
     super.key,
     this.hintText = 'Search menu...',
     this.onTap,
     this.onChanged,
+    this.onSubmitted,
     this.isInteractive = false,
+    this.autoFocus = false,
   });
 
   @override
@@ -31,7 +35,9 @@ class SearchInput extends StatelessWidget {
           borderRadius: AppRadii.borderRadiusPill,
         ),
         child: TextField(
+          autofocus: autoFocus,
           onChanged: onChanged,
+          onSubmitted: onSubmitted,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: AppTypography.body2(AppColors.textTertiary),

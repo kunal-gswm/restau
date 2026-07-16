@@ -15,14 +15,22 @@ class LanguageScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Language')),
-      body: ListView(
-        padding: AppSpacing.screenAll,
-        children: [
-          _buildLanguageOption(context, ref, locale, const Locale('en', 'US'), 'English', 'English (US)'),
-          _buildLanguageOption(context, ref, locale, const Locale('hi', 'IN'), 'Hindi', 'हिन्दी'),
-          _buildLanguageOption(context, ref, locale, const Locale('es', 'ES'), 'Spanish', 'Español'),
-          _buildLanguageOption(context, ref, locale, const Locale('fr', 'FR'), 'French', 'Français'),
-        ],
+      body: RadioGroup<Locale>(
+        groupValue: locale,
+        onChanged: (val) {
+          if (val != null) {
+            ref.read(settingsProvider.notifier).updateLocale(val);
+          }
+        },
+        child: ListView(
+          padding: AppSpacing.screenAll,
+          children: [
+            _buildLanguageOption(context, ref, locale, const Locale('en', 'US'), 'English', 'English (US)'),
+            _buildLanguageOption(context, ref, locale, const Locale('hi', 'IN'), 'Hindi', 'हिन्दी'),
+            _buildLanguageOption(context, ref, locale, const Locale('es', 'ES'), 'Spanish', 'Español'),
+            _buildLanguageOption(context, ref, locale, const Locale('fr', 'FR'), 'French', 'Français'),
+          ],
+        ),
       ),
     );
   }
@@ -32,13 +40,7 @@ class LanguageScreen extends ConsumerWidget {
       title: Text(language, style: AppTypography.subtitle2(AppColors.textPrimary)),
       subtitle: Text(subtitle, style: AppTypography.body2(AppColors.textSecondary)),
       value: value,
-      groupValue: currentLocale,
       activeColor: AppColors.primary,
-      onChanged: (val) {
-        if (val != null) {
-          ref.read(settingsProvider.notifier).updateLocale(val);
-        }
-      },
     );
   }
 }

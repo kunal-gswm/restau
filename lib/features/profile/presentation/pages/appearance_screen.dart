@@ -15,13 +15,21 @@ class AppearanceScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Appearance')),
-      body: ListView(
-        padding: AppSpacing.screenAll,
-        children: [
-          _buildThemeOption(context, ref, themeMode, ThemeMode.system, 'System', 'Match system settings'),
-          _buildThemeOption(context, ref, themeMode, ThemeMode.light, 'Light', 'Always light theme'),
-          _buildThemeOption(context, ref, themeMode, ThemeMode.dark, 'Dark', 'Always dark theme'),
-        ],
+      body: RadioGroup<ThemeMode>(
+        groupValue: themeMode,
+        onChanged: (val) {
+          if (val != null) {
+            ref.read(settingsProvider.notifier).updateTheme(val);
+          }
+        },
+        child: ListView(
+          padding: AppSpacing.screenAll,
+          children: [
+            _buildThemeOption(context, ref, themeMode, ThemeMode.system, 'System', 'Match system settings'),
+            _buildThemeOption(context, ref, themeMode, ThemeMode.light, 'Light', 'Always light theme'),
+            _buildThemeOption(context, ref, themeMode, ThemeMode.dark, 'Dark', 'Always dark theme'),
+          ],
+        ),
       ),
     );
   }
@@ -31,13 +39,7 @@ class AppearanceScreen extends ConsumerWidget {
       title: Text(title, style: AppTypography.subtitle2(AppColors.textPrimary)),
       subtitle: Text(subtitle, style: AppTypography.body2(AppColors.textSecondary)),
       value: value,
-      groupValue: currentMode,
       activeColor: AppColors.primary,
-      onChanged: (val) {
-        if (val != null) {
-          ref.read(settingsProvider.notifier).updateTheme(val);
-        }
-      },
     );
   }
 }
